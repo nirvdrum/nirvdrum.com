@@ -33,7 +33,7 @@ and the following migration:
   add_index :video_games, [:user_id, :asin], :unique => true
 </pre>
 
-the schema dumper may actually produce the following in schema.rb:
+the ActiveRecord PostgreSQL adapter's schema dumper may actually produce the following in schema.rb:
 
 <pre class="brush:ruby">
   add_index "video_games", ["asin", "user_id"],
@@ -41,13 +41,9 @@ the schema dumper may actually produce the following in schema.rb:
     :unique => true
 </pre>
 
-The distinction here is subtle, but important.  In the migration, I declared the index should be on the tuple (user\_id, asin) and SchemaDumper in turn generated code that would add a tuple on (asin, user\_id).
+The distinction here is subtle, but important.  In the migration, I declared the index should be on the tuple ``(user_id, asin)`` and the schema dumper in turn generated code that would add a tuple on ``(asin, user_id)``.
 
-Incidentally, in this case the problem didn't matter too much.  I added the index as a uniqueness constraint rather
-than for fast lookups.  Since order doesn't matter for uniqueness, the order doesn't matter for the index.  This is
-not true in the general case, however.
-
-The issue was with the way that the schema dumper was fetching the index data.  It issued a query against PostgreSQL's
+The issue was with the way that the ActiveRecord PostgreSQL adapter was fetching the index data.  It issued a query against PostgreSQL's
 maintenance tables to reconstruct the index pseudo-DDL statement.  The query used in Rails 2.3.2 is:
 
 <pre class="brush:sql">
@@ -68,16 +64,16 @@ maintenance tables to reconstruct the index pseudo-DDL statement.  The query use
   ORDER BY i.relname
 </pre>
 
-There's a lot going on there that may be hard to follow.  The query returns the index name (i.relname),
-whether or not the index is unique (d.indisunique), and a member column of the index (a.attname).  For
+There's a lot going on there that may be hard to follow.  The query returns the index name (``i.relname``),
+a Boolean indicating whether or not the index is unique (``d.indisunique``), and a member column of the index (``a.attname``).  For
 composite indices, there are multiple rows, one for each member column.
 
-The important thing to note is that d.indkey is a PostgreSQL array type (int2vector) that contains a list
+The important thing to note is that ``d.indkey`` is a PostgreSQL array type (``int2vector``) that contains a list
 of column positions for member columns of the index.  As can be seen by the query, there is no explicit ordering
-of the attname, so PostgreSQL is free to return the rows in any order it wishes.  In PostgreSQL 8.3, this ordering
+of the ``a.attname``, so PostgreSQL is free to return the rows in any order it wishes.  In PostgreSQL 8.3, this ordering
 appears to be attribute's positional index, in ascending order.  Please not that I have not consulted the
 PostgreSQL source to verify this.  Suffice it to say, the returned ordering should not be relied upon and is
-not guaranteed to match the order in d.indkey.  The problem is that the schema dumper did in fact rely on this order.
+not guaranteed to match the order in ``d.indkey``.  The problem is that the schema dumper did in fact rely on this order.
 
 As an aside, there is another problem with this query.  It will only index 10 elements of the d.indkey array, leading
 to a ceiling of 10 columns per index.  This is a Rails-imposed limit.  As of at least PostgreSQL 7.4, that limit is
