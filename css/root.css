@@ -5,28 +5,6 @@ BODY
 	font-family: sans-serif, serif;
 }
 
-/*
-BODY.main
-{
-	background-image: url(resident-1.jpg);
-	background-repeat: no-repeat;
-	background-attachment: fixed;
-	background-position: right;
-}
-*/
-
-#background
-{
-	position: absolute;
-	top: 0;
-	left: 0;
-	z-index: 0;
-	color: rgb(30, 30, 30);
-	font-family: courier;
-	line-height: 20pt;
-	overflow: hidden;
-}
-
 A:link, A:visited
 {
     color: rgb(0, 190, 255);
@@ -133,18 +111,16 @@ div#left
 
 div#content
 {
-	font-family: fixedsys, courier, sans-serif;
+	/*font-family: fixedsys, courier, sans-serif;*/
 	
 	position: absolute;
 	left: 15em;
 	top: 0;
-	
-	z-index: 1;
 }
 
 div#content div
 {
-	text-transform: lowercase;
+	/*text-transform: lowercase; */
 }
 
 div.box h4
