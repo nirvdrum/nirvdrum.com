@@ -30,7 +30,9 @@ and the following migration:
 the schema dumper may actually produce the following in schema.rb:
 
 <pre class="brush:ruby">
-  add_index "video_games", ["asin", "user_id"], :name => "index_video_games_on_user_id_and_asin", :unique => true
+  add_index "video_games", ["asin", "user_id"],
+    :name => "index_video_games_on_user_id_and_asin",
+    :unique => true
 </pre>
 
 The distinction here is subtle, but important.  In the migration, I declared the index should be on the tuple (user\_id, asin) and SchemaDumper in turn generated code that would add a tuple on (asin, user\_id).
@@ -80,7 +82,7 @@ was first introduced on September 23, 2005.  Interestingly, the problem was repo
 in April 2009, including myself.  I managed to find a nice little window before happening upon the problem and
 then trying to tackle it.  In the interim, someone else reported the issue and fixed it.  So, that's how I ended up with this analysis of a problem that I didn't have to solve.
 
-Interestingly, the issue shows up with ``rake db:test:load`` but not ``rake db:test:clone\_structure`` because the
+Interestingly, the issue shows up with ``rake db:test:load`` but not ``rake db:test:clone_structure`` because the
 former uses the ActiveRecord PostgreSQL adapter's implementation of schema dumping and loading, whereas the latter
 uses the pg\_dump tool to create a DDL file.  ``rake db:test:prepare`` does a ``clone_structure`` followed by a ``load``,
 which yields a test database that does not match the correct one used in development.

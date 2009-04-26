@@ -121,6 +121,7 @@ div#content
 div#content div
 {
 	/*text-transform: lowercase; */
+	line-height: 1.5;
 }
 
 div.box h4
