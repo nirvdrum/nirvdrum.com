@@ -33,7 +33,7 @@ and the following migration:
   add_index :video_games, [:user_id, :asin], :unique => true
 </pre>
 
-the ActiveRecord PostgreSQL adapter's schema dumper may actually produce the following in schema.rb:
+the schema dumper for the ActiveRecord PostgreSQL adapter may actually produce the following in schema.rb:
 
 <pre class="brush:ruby">
   add_index "video_games", ["asin", "user_id"],
@@ -43,7 +43,7 @@ the ActiveRecord PostgreSQL adapter's schema dumper may actually produce the fol
 
 The distinction here is subtle, but important.  In the migration, I declared the index should be on the tuple ``(user_id, asin)`` and the schema dumper in turn generated code that would add a tuple on ``(asin, user_id)``.
 
-The issue was with the way that the ActiveRecord PostgreSQL adapter was fetching the index data.  It issued a query against PostgreSQL's
+The issue was with the way that the adapter was fetching the index data.  It issued a query against PostgreSQL's
 maintenance tables to reconstruct the index pseudo-DDL statement.  The query used in Rails 2.3.2 is:
 
 <pre class="brush:sql">
