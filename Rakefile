@@ -15,12 +15,11 @@ cd /var/www/nirvdrum.com/cached-copy
 git checkout #{branch}
 git pull origin #{branch}
 git checkout -f
-rm -rf _site
 jekyll --no-auto
-mv _site ../_#{branch}
-mv ../#{branch} _old
-mv ../_#{branch} ../#{branch}
-rm -rf _old
+rm -rf ../_old
+mv ../www ../_old
+mv _site ../www
+echo "Done deploying"
 EOF
     commands = commands.gsub(/\n/, "; ")
     ssh.exec commands

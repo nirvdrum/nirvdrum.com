@@ -6,6 +6,6 @@ title: nirvdrum
 Posts:
 <ul>
   {% for post in site.posts %}
-    <li><a href="{{ post.url }}">{{ post.title }}</a><abbr>{{ post.date | date_to_string }}</abbr></li>
+    <li><a href="{{ post.url }}">{{ post.title }}</a> ({{ post.date | date_to_string }})</li>
   {% endfor %}
 </ul>

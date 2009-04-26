@@ -82,5 +82,5 @@ then trying to tackle it.  In the interim, someone else reported the issue and f
 
 Interestingly, the issue shows up with ``rake db:test:load`` but not ``rake db:test:clone\_structure`` because the
 former uses the ActiveRecord PostgreSQL adapter's implementation of schema dumping and loading, whereas the latter
-uses the pg\_dump tool to create a DDL file.  ``rake db:test:prepare`` does a ``clone\_structure`` followed by a ``load``,
+uses the pg\_dump tool to create a DDL file.  ``rake db:test:prepare`` does a ``clone_structure`` followed by a ``load``,
 which yields a test database that does not match the correct one used in development.
