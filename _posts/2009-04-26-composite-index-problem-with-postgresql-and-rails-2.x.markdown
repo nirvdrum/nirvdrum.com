@@ -2,11 +2,17 @@
 layout: post
 title: Composite Index problem with PostgreSQL and Rails 2.x
 ---
-  
+
+Introduction
+============
+
 Recently I ran into an issue with using composite indices in PostgreSQL and Rails 2.3.2.  I only managed to
 catch the problem by using the [shoulda should\_have\_index](http://dev.thoughtbot.com/shoulda/classes/Shoulda/ActiveRecord/Macros.html#M000057) macro.
 This macro asserts that an index appears on a list of columns.  Since it is a list, the order of the columns is
 in fact significant.
+
+Problem
+--------
 
 The problem is that given a table with the following definition:
 
@@ -76,6 +82,10 @@ not guaranteed to match the order in d.indkey.  The problem is that the schema d
 As an aside, there is another problem with this query.  It will only index 10 elements of the d.indkey array, leading
 to a ceiling of 10 columns per index.  This is a Rails-imposed limit.  As of at least PostgreSQL 7.4, that limit is
 32 by default and can be configured higher at compile-time.
+
+
+Resolution
+----------
 
 Both issues were fixed as of April 21, 2009 with the closing of [Rails ticket #2515](https://rails.lighthouseapp.com/projects/8994-ruby-on-rails/tickets/2515), nearly 3.5 years after the problem
 was first introduced on September 23, 2005.  Interestingly, the problem was reported by three different parties

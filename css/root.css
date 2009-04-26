@@ -133,3 +133,13 @@ div.box h4
 	color: rgb(0,0,0);
 	font-weight: normal;
 }
+
+div.box h1, h2
+{
+  font-weight: normal;
+  border-bottom: 1px solid rgb(45, 45, 45);
+  border-top: 1px solid rgb(45, 45, 45);
+  padding-left: 10px;
+  margin-top: 10px;
+  color: rgb(45, 45, 45);
+}
