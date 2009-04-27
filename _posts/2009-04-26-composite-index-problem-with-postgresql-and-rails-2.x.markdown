@@ -85,8 +85,7 @@ Resolution
 
 Both issues were fixed as of April 21, 2009 with the closing of [Rails ticket #2515](https://rails.lighthouseapp.com/projects/8994-ruby-on-rails/tickets/2515), nearly 3.5 years after the problem
 was first introduced on September 23, 2005.  Interestingly, the problem was reported by three different parties
-in April 2009, including myself.  I managed to find a nice little window before happening upon the problem and
-then trying to tackle it.  In the interim, someone else reported the issue and fixed it.  So, that's how I ended up with this analysis of a problem that I didn't have to solve.
+in April 2009.  Between the time I came across it and then eventually came up with a fix and filed a ticket, someone else reported the issue and fixed it.  So, that's how I ended up with this analysis of a problem that in the end I didn't have to solve.
 
 Interestingly, the issue shows up with ``rake db:test:load`` but not ``rake db:test:clone_structure`` because the
 former uses the ActiveRecord PostgreSQL adapter's implementation of schema dumping and loading, whereas the latter
