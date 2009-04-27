@@ -129,7 +129,7 @@ div.box h4
 	margin: 0px;
 	padding: 5px;
 	text-align: center;
-	background-color: rgb(45,45,45);
+	background-color: rgb(75,75,75);
 	color: rgb(0,0,0);
 	font-weight: normal;
 }
@@ -141,5 +141,5 @@ div.box h1, h2
   border-top: 1px solid rgb(45, 45, 45);
   padding-left: 10px;
   margin-top: 10px;
-  color: rgb(45, 45, 45);
+  color: rgb(75, 75, 75);
 }
