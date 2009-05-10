@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Composite Index problem with PostgreSQL and Rails 2.x
+title: Composite Index Problem with PostgreSQL and Rails 2.x
 ---
 
 Introduction
