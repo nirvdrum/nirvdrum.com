@@ -61,40 +61,44 @@ The problem with the implementation of `alias_method_chain` is one of definition
 To make the discussion a little more concrete, we'll use the following example adapted from the ninja-decorators project.  It is a bit contrived, but should serve well enough as a basis for discussion.
 
 <code class="brush:ruby">
-def self.around_filter(around_method, method_names)
-  method_names.each do |meth|
-    define_method("#{meth}_with_around_filter") do |*args|        
-      send(around_method, *args) do |*ar_args|
-        send("#{meth}_without_around_filter", *ar_args)
+require 'activesupport'
+  
+class NumberFun
+  def self.around_filter(around_method, method_names)
+    method_names.each do |meth|
+      define_method("#{meth}_with_around_filter") do |*args|        
+        send(around_method, *args) do |*ar_args|
+          send("#{meth}_without_around_filter", *ar_args)
+        end
       end
+
+      alias_method_chain meth, :around_filter
     end
-
-    alias_method_chain meth, :around_filter
   end
-end
 
-def increment_filter(num)
-  yield(num + 1)
-end
+  def increment_filter(num)
+    yield(num + 1)
+  end
 
-def number_printer(num)
-  puts num
-end
+  def number_printer(num)
+    puts num
+  end
 
-def square_printer(num)
-  puts num * num
-end
+  def square_printer(num)
+    puts num * num
+  end
 
-around_filter :increment_filter, [:number_printer, :square_printer]
+  around_filter :increment_filter, [:number_printer, :square_printer]
+end
 </code>
 
 `:number_printer` and `:square_printer` are two simple methods.  They take a number in and print out its value or its square, respectively.  `:increment_filter` is a simple "around filter"; it augments a method by incrementing the input argument by 1 before executing the original method.  Running both methods will produce the following in IRB:
 
 <code class="brush:ruby">
->> number_printer 3
+>> NumberFun.new.number_printer 3
 4
 => nil
->> square_printer 5
+>> NumberFun.new.square_printer 5
 36
 => nil
 </code>
@@ -111,7 +115,7 @@ around_filter :increment_filter, [:number_printer, :square_printer]
 Running this through IRB again, we'd likely expect to see `:number_printer` print out `2 + num` for argument `num`.  Instead, the session looks like this:
 
 <code class="brush:ruby">
->> number_printer 3
+>> NumberFun.new.number_printer 3
 SystemStackError: stack level too deep
 	from /Users/nirvdrum/dev/workspaces/alias_method_chain/blah.rb:6:in `send'
 	from /Users/nirvdrum/dev/workspaces/alias_method_chain/blah.rb:6:in `number_printer_with_around_filter'
@@ -160,8 +164,8 @@ A simplified definition is thus:
 
 <code class="brush:ruby">
 def alias_method_chain(target, feature)
-  with_method = "#{aliased_target}_with_#{feature}#{punctuation}"
-  without_method = "#{aliased_target}_without_#{feature}#{punctuation}"
+  with_method = "#{target}_with_#{feature}"
+  without_method = "#{target}_without_#{feature}"
 
   alias_method without_method, target
   yield if block_given?
@@ -169,30 +173,43 @@ def alias_method_chain(target, feature)
 end
 </code>
 
-The block passed to alias_method_chain can then take care of the creation of the "with" method, which will have access to the "without" method at the current level.  Breaking away from `around_filter` momentarily, we can then do the following:
+The block passed to alias_method_chain can then take care of the creation of the "with" method, which will have access to the "without" method at the current level.  Breaking away from `around_filter`, we can more easily see how nested `alias_method_chain` calls work with the new definition:
 
 <code class="brush:ruby">
-# Build up a proc that will construct the filtered method.  Execution of the proc is delayed
-# until we encounter the alias_method_chain call.
-filtered_method_builder = Proc.new do
+class MoreNumberFun
+  # Build up a proc that will construct the filtered method
+  # Execution of the proc is delayed until we encounter the alias_method_chain call.
+  filtered_method_builder = Proc.new do
 
-  # Get a reference to the unfiltered method or, more accurately, the original method with
-  # all previous filters already applied.  This new filtered method builds up on the filters
-  # already applied.
-  unfiltered_method = instance_method :number_printer_without_filter
+    # Get a reference to the unfiltered method or, more accurately, the original method with
+    # all previous filters already applied.  This new filtered method builds up on the filters
+    # already applied.
+    unfiltered_method = instance_method :number_printer_without_filter
 
-  # Define the newly filtered method.
-  define_method("number_printer_with_around_filter_wrapper") do |*args|
-    unfiltered_method.bind(self).call(*args)
+    # Define the newly filtered method.
+    define_method("number_printer_with_filter") do |*args|
+      unfiltered_method.bind(self).call(args.first + 1)
+    end
   end
-end
 
-alias_method_chain :number_printer, :filter, &filtered_method_builder
-alias_method_chain :number_printer, :filter, &filtered_method_builder
+  def number_printer(num)
+    puts num
+  end
+
+  alias_method_chain :number_printer, :filter, &filtered_method_builder
+  alias_method_chain :number_printer, :filter, &filtered_method_builder
+end
 </code>
 
-In this admittedly convoluted example, the block is built up as a proc first.  This allows us to make the same `alias_method_chain` call without needing to duplicate code.  The proc gets a reference to `:number_printer_without_filter` and calls it within the newly defined `:number_printer_with_filter`.  This forms a closure and lets each level of "with" and "without" methods to pair up, subsequently avoiding the infinite recursion problem when using just `send` alone.
+In this admittedly convoluted example, the block passed to the `alias_method_chain` calls is built up as a proc first.  This allows us to make the same `alias_method_chain` calls without needing to duplicate code.  The proc gets a reference to `:number_printer_without_filter` and calls it within the newly defined `:number_printer_with_filter`, which for simplicity in the example, provides the same behavior that `:increment_filter` previously did.  This forms a closure and lets each level of "with" and "without" methods to pair up, subsequently avoiding the infinite recursion problem when using just `send` alone.
 
+Running in IRB now, we get the expected behavior of print out of `2 + num` for argument `num`, rather than the stack overflow exception we previously experienced:
+
+<code class="brush:ruby">
+>> MoreNumberFun.new.number_printer 3
+5
+=> nil
+</code>
 
 Conclusion
 ==========
