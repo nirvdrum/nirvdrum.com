@@ -197,6 +197,8 @@ In this admittedly convoluted example, the block is built up as a proc first.  T
 Conclusion
 ==========
 
-I began writing this post just to document the changes necessary to alias_method_chain in order to make ninja-decorators work.  If this work could make its way back into Rails core, great.  Otherwise, it serves as a decent rationale document.  If you've run into similar issues yourself, you should now know why and how to work around them.
+I began writing this post just to document the changes necessary to alias_method_chain in order to make ninja-decorators work.  If this work could make its way back into Rails core, great.  Otherwise, it serves as a decent rationale document.  If you've run into similar issues yourself, you should now know why and how to work around them.  One issue not addressed here is reordering the chain or removing links from the chain.  Since each link has a tight coupling at the time of definition, altering the chain via anything other than an append/prepend may be confusing.
 
-* I suspect someone much smarter than me knows a way.  After a couple days on the issue, I couldn't come up with anything.
+
+
+\* I suspect someone much smarter than me knows a way.  After a couple days on the issue, I couldn't come up with anything.
