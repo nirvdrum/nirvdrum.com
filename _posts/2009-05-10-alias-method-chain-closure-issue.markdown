@@ -1,12 +1,13 @@
 ---
 layout: post
 title: Nesting alias_method_chain Calls
+published: false
 ---
 
 Introduction
 ============
 
-Rails provides a nifty utility in ActiveSupport called `alias_method_chain`. For those not familiar with it, it simplifies the task of augmenting an already defined method. The newly enhanced method is aliased to the name of the original method and the original method is aliased to some other name in order that it may still be referenced.
+Rails provides a nifty utility in ActiveSupport called `alias_method_chain`. For those not familiar with it, it simplifies the task of "replacing" an already defined method with an augmented one. The new method is aliased to the name of the original method and the original method is aliased to some other name in order that it may still be referenced.
 
 More succinctly, the following call:
 
@@ -21,7 +22,17 @@ alias_method :number_printer_without_filter, :number_printer
 alias_method :number_printer, :number_printer_with_filter
 </code>
 
-Note that these symbols are method names. It is up to you to define both methods `:number_printer` and `:number_printer_with_filter`.
+Fig. 1 illustrates how the `alias_method_chain` call changes references to the method definitions like so:
+
+<div class="figure">
+  <img src="/images/alias_method_chain.png" />
+  
+  Fig. 1: Results of alias_method_chain call.
+</div>
+
+Now the original method defined as `:number_printer` is referenced as `:number_printer_without_filter`.  `:number_printer` now points to the method definition for `:number_printer_with_filter`, which can be referenced as either `:number_printer` or `:number_printer_with_filter`.
+
+This implies that prior to the execution of the `alias_method_chain` call, you must define both methods `:number_printer` and `:number_printer_with_filter`.
 
 Motivating Example
 ==================
@@ -38,7 +49,17 @@ Here, we want `:log_around` to decorate `:number_printer` with `:secure_around` 
 Problem
 =======
 
-The problem with the implementation of `alias_method_chain` is one of definition order. `:number_printer_without_filter` will not exist until after the `alias_method_chain` call is complete. `:number_printer_with_filter` must exist before the `alias_method_chain` call can begin, otherwise the `alias_method` call made internally will fail.  In most cases, this isn't a problem in and of itself.  The problem is revealed once you need to dynamically invoke a method.  E.g.:
+The problem with the implementation of `alias_method_chain` is one of definition order with regards to its two internal `alias_method` calls.  If the new method is an enhancement of an existing one, there likely exists a coupling between the two.  Since the `alias_method_chain` call is effectively atomic, however, this complicates how the two methods reference each other. Fig. 2 shows the intermittent states between each of the two `alias_method` calls made internally by `alias_method_chain`.
+
+<div class="figure">
+  <img src="/images/alias_method_chain_detailed.png" />
+  
+  Figure 2: Detailed breakdown of alias_method_chain mechanics.
+</div>
+
+`:number_printer_without_filter` will not exist until after the `alias_method_chain` call is complete. `:number_printer_with_filter` must exist before the `alias_method_chain` call can begin, otherwise the second `alias_method` call made internally will fail.  As a consequence, `:number_printer_with_filter` must call `:number_printer_without_filter` dynamically.  As long as you only use one level of `alias_method_chain` calls, this isn't a problem.  With multiple levels of chaining, however, dynamic calls like this fall apart.
+
+To make the discussion a little more concrete, we'll use the following example adapted from ninja-decorators.  It is a bit contrived, but should serve well enough as a basis for discussion.
 
 <code class="brush:ruby">
 def self.around_filter(around_method, method_names)
@@ -68,27 +89,27 @@ end
 around_filter :increment_filter, [:number_printer, :square_printer]
 </code>
 
+`:number_printer` and `:square_printer` are two simple methods.  They take a number in and print out its value or its square, respectively.  `:increment_filter` is a simple "around filter"; it augments a method by incrementing the input argument by 1 before executing the original method.  Running both methods will produce the following in IRB:
+
 <code class="brush:ruby">
 >> number_printer 3
 4
 => nil
->> square_printer 4
-25
+>> square_printer 5
+36
 => nil
 </code>
 
-If your mindgrapes are hurting, you're in good company.  It's confusing code, but it's also rather powerful.  Likewise, it's wrapped in a library so we never need to look at it again.  It's important to understand it for the purpose of this article, however.
+`around_filter` is where all the hard work is being done and is where `alias_method_chain` is employed.  It takes as its arguments a filter method name and a list of method names to decorate with that filter.  For each method to decorate it defines the required "with" method for `alias_method_chain`.  This newly defined method will call the filter method (`increment_filter` in this case), which will in turn call the original, undecorated method (`number_printer_without_increment_filter` or `square_printer_without_increment_filter`) as a block.  Once the "with" method is defined,  `alias_method_chain` is called so that the original method name can be used to transparently call the newly decorated method.
 
-`:number_printer` and `:square_printer` are two simple methods.  They take a number in and print out its value or its square, respectively.  `:increment_filter` is a simple "around filter"; it augments a method by incrementing the input argument by 1.  This is why the IRB output looks like its off by 1.
-
-`around_filter` is where all the hard work is being done.  It takes as its arguments a filter method name and a list of method names to decorate with that filter.  For each method to decorate it defines a new "with" method for `alias_method_chain`.  This newly defined method will call the filter, which will in turn call the original, undecorated method (the "without" method).  Once this is all done, the `alias_method_chain` is made so that the original method name can be used to transparently call the decorated method.
-
-This approach will work dandily, until you need to start decorating a method more than once.  For the sake of the example, I'll pretend that I actually want to increment each input argument as two.  In reality, I'd likely want to apply a completely different filter.  The outcome is precisely the same, but to keep things simple, I'll just apply the `:increment_filter` twice:
+While convoluted (don't worry, it's wrapped up a library), this approach will work dandily until you need to start decorating a method more than once.  For the sake of the example, I'll pretend that I actually want to increment each input argument as two.  In reality, I'd likely want to apply a completely different filter.  The outcome is precisely the same, but to keep things simple, I'll just apply the `:increment_filter` twice:
 
 <code class="brush:ruby">
 around_filter :increment_filter, [:number_printer, :square_printer]
 around_filter :increment_filter, [:number_printer, :square_printer]
 </code>
+
+Running this through IRB again, I'd expect to see `:number_printer` print out `2 + num` for argument `num`.  Instead, the session actually looks like this:
 
 <code class="brush:ruby">
 >> number_printer 3
@@ -112,15 +133,13 @@ SystemStackError: stack level too deep
 ... 7586 levels...
 </code>
 
-That's the polite way of telling you that you have infinite recursion, not the expected value of 5.  The issue is that each `around_filter` call defines a new "with" method that calls the "without" method dynamically.  Calling a method by name with `send`, however, only calls the one at the current lexical scope.  Meanwhile, each call to `alias_method_chain` changes the alias target of the "without" method.  As such, the following expected execution flow does not occur (levels at which a method is defined/aliased are indicated after method name, arrows indicate method execution flow):
+That's the polite way of telling you that you have infinite recursion, not the expected value of 5.  The issue is that each `around_filter` call defines a new "with" method that calls the "without" method dynamically.  Calling a method by name with `send`, however, only calls the one at the current lexical scope.  Meanwhile, each call to `alias_method_chain` changes the alias target of the "without" method.  As such, the following expected execution flow does not occur:
 
-<code class="brush:ruby">
-:number_printer(L2) -->
-  :number_printer_with_filter(L2) --> 
-    :number_printer_without_filter(L2) # :number_printer_with_filter(L1) -->
-      :number_printer_without_filter(L1) -->
-        :number_printer (L1)
-</code>
+<div class="figure">
+  <img src="/images/expected_nesting_behavior.png" />
+  
+  Figure 3: Expected behavior when chaining <code>alias_method_chain</code> calls.
+</div>
 
 Instead, we have:
 

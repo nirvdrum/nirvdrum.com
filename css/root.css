@@ -143,3 +143,15 @@ div.box h1, h2
   margin-top: 10px;
   color: rgb(75, 75, 75);
 }
+
+div.figure img
+{
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+div.figure
+{
+  text-align: center;
+}
