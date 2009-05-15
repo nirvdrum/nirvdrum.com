@@ -24,7 +24,7 @@ alias_method :number_printer, :number_printer_with_filter
 Fig. 1 illustrates how the `alias_method_chain` call changes references to the method definitions like so:
 
 <div class="figure">
-  <img src="/images/alias_method_chain.png" />
+  <img src="/images/alias-method-chain-closure-issue/alias_method_chain.png" />
   
   Fig. 1: Results of alias_method_chain call.
 </div>
@@ -51,7 +51,7 @@ Problem
 The problem with the implementation of `alias_method_chain` is one of definition order with regards to its two internal `alias_method` calls.  If the new head of the chain is an enhancement of an existing method in the chain, there likely exists a coupling between the two.  Since the `alias_method_chain` call is effectively atomic, however, this complicates how the two methods reference each other. Fig. 2 shows the intermittent states between each of the two `alias_method` calls made internally by `alias_method_chain`.
 
 <div class="figure">
-  <img src="/images/alias_method_chain_detailed.png" />
+  <img src="/images/alias-method-chain-closure-issue/alias_method_chain_detailed.png" />
   
   Figure 2: Detailed breakdown of alias_method_chain mechanics.
 </div>
@@ -136,13 +136,13 @@ That's the polite way of telling you that you have infinite recursion, not the e
 
 <div style="float: left; width: 100%; margin: 10px;">
   <div class="figure" style="float: left; width: 50%;">
-    <img src="/images/actual_nesting_behavior.png" />
+    <img src="/images/alias-method-chain-closure-issue/actual_nesting_behavior.png" />
   
     Figure 3: Actual behavior when chaining <code>alias_method_chain</code> calls.
   </div>
 
   <div class="figure" style="float: left;">
-    <img src="/images/expected_nesting_behavior.png" />
+    <img src="/images/alias-method-chain-closure-issue/expected_nesting_behavior.png" />
   
     Figure 4: Expected behavior when chaining <code>alias_method_chain</code> calls.
   </div>
