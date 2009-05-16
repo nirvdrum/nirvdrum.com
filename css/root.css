@@ -44,6 +44,7 @@ div.linkbox
 	border-width: 1px;
 	border-color: rgb(200,200,200);
 	background-color: rgb(0, 0, 0);
+	margin-bottom: 10px;
 }
 
 div.linkbox ul
@@ -118,7 +119,7 @@ div#content
 	top: 0;
 }
 
-div#content div
+div#content div, p
 {
 	/*text-transform: lowercase; */
 	line-height: 1.5;
