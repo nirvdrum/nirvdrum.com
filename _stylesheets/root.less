@@ -2,6 +2,7 @@
 @dark_gray: rgb(75, 75, 75);
 
 @nav_width: 200px;
+@line_height: 1.5;
 
 body
 {
@@ -40,7 +41,7 @@ a:active
 	width: 45%;	
 }
 
-.linkbox, #github-badge
+.navbox
 {
   width: @nav_width;
 	border-style: dashed;
@@ -50,8 +51,14 @@ a:active
 	margin-bottom: 10px;
 }
 
+#github-badge
+{
+  .navbox;
+}
+
 .linkbox
 {
+  .navbox;
 	display: block;
 	background-color: rgb(0, 0, 0);
 
@@ -80,6 +87,7 @@ a:active
   	display: block;
   }
   
+  /** Nested linkbox. */
   .linkbox
   {
   	position: absolute;
@@ -104,11 +112,16 @@ a:active
 	position: absolute;
 	left: @nav_width + 25;
 	top: 0;
+	
+	div
+	{
+	  line-height: @line_height;
+	}
 }
 
-#content div, p
+p
 {
-	line-height: 1.5;
+	line-height: @line_height;
 }
 
 .box
