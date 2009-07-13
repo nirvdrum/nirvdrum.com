@@ -10,8 +10,8 @@ layout: nil
  <updated>{{ site.time | date_to_xmlschema }}</updated>
  <id>http://nirvdrum.com/</id>
  <author>
-   <name>Nick Quaranto</name>
-   <email>nick@quaran.to</email>
+   <name>Kevin Menard</name>
+   <email>nirvdrum@gmail.com</email>
  </author>
 
  {% for post in site.posts %}
