@@ -4,7 +4,7 @@ title: Composite Index Problem with PostgreSQL and Rails 2.x
 ---
 
 Introduction
-============
+------------
 
 Recently I ran into an issue with using composite indices in PostgreSQL and Rails 2.3.2.  I only managed to
 catch the problem by using the [shoulda should\_have\_index](http://dev.thoughtbot.com/shoulda/classes/Shoulda/ActiveRecord/Macros.html#M000057) macro.

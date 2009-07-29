@@ -4,7 +4,7 @@ title: Verizon FiOS Sales Chat
 ---
 
 Introduction
-============
+------------
 
 I recently moved into a new town that has Verizon FiOS services available.  I thought I would take a look into ordering FiOS for Internet at the very least and possibly for television service as well.  The Verizon site makes it rather difficult to figure out service pricing in general and, with a constant stream of promotions, it can be really hard to figure out what something is ultimately going to cost.  Against my better judgment, I decided to try Verizon's live sales chat.  What was interesting to me about this chat was the weird turn it took almost immediately.  The sales guy was very defensive about the marketing material.  This, of course, made it fun to be a bit more sarcastic in my communication.
 

@@ -4,7 +4,7 @@ title: Nesting alias_method_chain Calls
 ---
 
 Introduction
-============
+------------
 
 Rails provides a nifty utility in ActiveSupport called `alias_method_chain`. For those not familiar with it, it simplifies the task of "replacing" an already defined method with an augmented one. The new method is aliased to the name of the original method and the original method is aliased to some other name in order that it may still be referenced.
 
