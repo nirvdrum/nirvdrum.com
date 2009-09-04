@@ -34,7 +34,7 @@ Now the original method defined as `:number_printer` is referenced as `:number_p
 This implies that prior to the execution of the `alias_method_chain` call, you must define both methods `:number_printer` and `:number_printer_with_filter`.
 
 Motivating Example
-==================
+------------------
 
 The <a href="http://github.com/haruska/ninja-decorators/">ninja-decorators project</a> relies heavily on `alias_method_chain` and its usage will be used as the example throughout the remainder of the article.  ninja-decorators gives you `before_filter`, `after_filter`, and `around_filter` functionality outside of Rails controllers.  With these methods you can handle cross-cutting concerns in a class located elsewhere in your Rails app or without having to use Rails at all.  Using the standard examples of security and logging as cross-cutting concerns, we have something like the following:
 
@@ -46,7 +46,7 @@ around_filter :log_around, [:number_printer]
 Here, we want `:log_around` to decorate `:number_printer` with `:secure_around` applied.  Internally, `around_filter` delegates to `alias_method_chain` to handle method decoration.
 
 Problem
-=======
+-------
 
 The problem with the implementation of `alias_method_chain` is one of definition order with regards to its two internal `alias_method` calls.  If the new head of the chain is an enhancement of an existing method in the chain, there likely exists a coupling between the two.  Since the `alias_method_chain` call is effectively atomic, however, this complicates how the two methods reference each other. Fig. 2 shows the intermittent states between each of the two `alias_method` calls made internally by `alias_method_chain`.
 
@@ -212,7 +212,7 @@ Running in IRB now, we get the expected behavior of print out of `2 + num` for a
 </pre>
 
 Conclusion
-==========
+----------
 
 I began writing this post just to document the changes necessary to alias_method_chain in order to make ninja-decorators work.  If this work could make its way back into Rails core, great.  Otherwise, it serves as a decent rationale document.  If you've run into similar issues yourself, you should now know why and how to work around them.  One issue not addressed here is reordering the chain or removing links from the chain.  Since each link has a tight coupling at the time of definition, altering the chain via anything other than an append/prepend may be confusing.
 
