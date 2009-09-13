@@ -6,10 +6,7 @@ task :deploy do
 
   branch = "master"
 
-  username = ask("Username:  ") { |q| q.echo = true }
-  password = ask("Password:  ") { |q| q.echo = "*" }
-
-  Net::SSH.start('nirvdrum.com', username, :port => 22, :password => password) do |ssh|
+  Net::SSH.start('nirvdrum.com', 'nirvdrum', :port => 22) do |ssh|
     commands = <<EOF
 cd /var/www/nirvdrum.com/cached-copy
 git checkout #{branch}
