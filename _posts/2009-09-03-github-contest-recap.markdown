@@ -21,4 +21,6 @@ The distance calculation weighted different attributes based upon observations o
 
 I had two goals when starting this project: 1) win the contest; and 2) learn more about Ruby.  Unfortunately, achieving the latter may have come at the expense of the former.  In the end, I achieved slightly over 40% accuracy, which was a far cry from where I had expected to end up and wasn't enough to win the contest.  My original choice of technology stack was not appropriate.  In most of my previous AI projects I used Java with a smattering Python and to a lesser extent, ML and LISP.  Having been using Ruby as my primary programming language for the past year and a half, I thought I would use it for my contest entry.  I spent roughly three weeks trying to optimize a Ruby solution that could only achieve 31% accuracy after a seven hour run on a quad core machine with 4 GB RAM.  During the last week of the contest, I rewrote the project in Java and achieved 40% accuracy with a 10 minute long run on a dual core MacBook Pro.  I plan on elaborating on that a bit in a future post.
 
+*[Edit: (Sept. 17, 2009) I've now published the [post comparing my Ruby and Java entries](http://nirvdrum.com/2009/09/17/lessons-learned-in-large-computations-with-ruby.html)]*
+
 The code for my entry can be found on [GitHub](http://github.com/nirvdrum/github-contest-java/tree/).
