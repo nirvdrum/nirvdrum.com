@@ -13,14 +13,14 @@ layout: nil
       <loc>http://nirvdrum.com/about.html</loc>
       <lastmod>{{ site.time | date: '%Y-%m-%d' }}</lastmod>
       <changefreq>monthly</changefreq>
-      <priority>0.8</priority>
+      <priority>0.5</priority>
    </url>
 {% for post in site.posts %}
    <url>
       <loc>http://nirvdrum.com{{ post.url }}</loc>
       <lastmod>{{ post.date | date: '%Y-%m-%d' }}</lastmod>
       <changefreq>never</changefreq>
-      <priority>0.8</priority>
+      <priority>0.9</priority>
    </url>
 {% endfor %}
 </urlset>
