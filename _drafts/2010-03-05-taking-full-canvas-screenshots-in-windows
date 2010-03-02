@@ -1,0 +1,38 @@
+---
+layout: post
+title: Taking Full Canvas Screenshots in Windows
+---
+
+When developing a service for detecting Web browser rendering issues, it's very convenient to be able to capture the contents of the entire browser canvas, rather than just the current viewport.  It lets the user see how their content looks from a holistic perspective.
+
+One approach to grabbing the full canvas is to take a screenshot and then scroll the view port to display all the previously hidden sections, stitching all of the images together to form one composite that represents the full canvas contents.  While this generally works, it fails if there are any fixed position elements on the page or if there is ECMAScript in place to modify the DOM on scroll events because in both cases the very act of scrolling modifies the canvas's contents.  It would be better then to capture the entire canvas without scrolling.
+
+THE PROBLEM WITH VIRTUAL SCREEN COORDINATES
+
+Windows does not allow windows to be larger than the virtual screen resolution by default.  I believe this is intended as a security restriction so that malware can't occupy the entire screen and push their close button off-screen, where the user can't click it.  The virtual screen resolution is typically defined as the vertical and horizontal span of all connected displays.  If you have a single display, the current screen resolution will have a 1:1 match with the virtual screen resolution and if you have two displays side-by-side, the virtual screen resolution will be the height of the lowest resolution by the sum of the two horizontal screen resolutions.  An exception to this rule is that some models of video cards are shipped with software that modify the reported screen resolution, allowing more drawing area than the monitor could otherwise handle.  In these cases, a panning viewport is created that moves around the virtual desktop.
+
+Resizing the window to display the entire canvas contents, thus, requires some trickery in handling the virtual screen coordinates.  As it turns out, every window is sent a WM_SIZING (XXX LINK XXX) message just before the window's screen coordinates or size is about to change.  WM_SIZING passes as its lParam a WM_XXXX value which contains the virtual screen coordinates as the the XXXX and YYYY members.  Modifying the lParam before the window receives the message would allow us to effectively change the virtual screen resolutions on a one-off basis.
+
+If you have access to the source code of the application you'd like to capture the full canvas contents of, the solution is simple at this point.  Just modify your message processing loop to handle WM_SIZING messages and modify the lParam as necessary.  In the general case, however, you won't be able to modify the binary so you'll have to modify the executing processes's address space to inject your own message handler.
+
+
+While the general concept is rather straightforward, the implementation is fairly tricky.  At the core of it, the complexity is caused by the WM_SIZING message being sent rather than retrieved by the window.
+
+
+CALLWNDPROC HANDLER  (WHY WE CAN'T USE CALLMSGPROC)
+
+WINDOWS HOOK
+
+MODIFY WM_SIZING MESSAGE
+
+
+
+
+RESIZE WINDOW BACK TO ORIGINAL DIMENSIONS
+
+
+
+
+SPECIAL-CASING MAXIMIZED WINDOWS
+
+One caveat is that if the window is already maximized, Windows will not send it a sizing message.  My solution to this problem is to first check if the window is already maximized and if so note that fact, changed the maximized state to restored, then resize the window to be large enough for the full canvas contents.  Once done, I then re-maximize the window if it was previously maximized, effectively restoring the window to its original dimensions.  It is a bit kludgy, but I haven't been able to come up with a better solution.  I suspect there is a way by intercepting a different window message, but I couldn't figure out which one if it is in fact possible.
