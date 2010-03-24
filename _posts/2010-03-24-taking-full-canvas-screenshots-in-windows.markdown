@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Taking Full Canvas Screenshots in Windows
+title: How to Take Full Page or Full Canvas Screenshots in Windows
 ---
 
 Introduction
@@ -64,7 +64,7 @@ HHOOK nextHook = SetWindowsHookEx(WH_CALLWNDPROC, hkprcSysMsg, hinstDLL, 0);
 </pre>
 <div class='caption'>Example 1: Registering the <code>WH_CALLWNDPROC</code> hook procedure.</div>
 
-[`SetWindowLongPtr`](http://msdn.microsoft.com/en-us/library/ms644898%28VS.85%29.aspx) is an amazing features of Windows that lets you supply a new function pointer for a predefined set of functions in a Windows process.  The new function can then call out to the original function through a handle to that function.  One of the functions allowed to be replaced is the window procedure.  By supplying our own we will be able to finally modify that `WM_MINMAXINFO` message.  In `Example 1` we showed how to call `SetWindowLongPtr`.  `Example 2` shows what the custom procedure looks like:
+[`SetWindowLongPtr`](http://msdn.microsoft.com/en-us/library/ms644898%28VS.85%29.aspx) is an amazing feature of Windows that lets you supply a new function pointer for a predefined set of functions in a Windows process.  The new function can then call out to the original function through a handle to that function.  One of the functions allowed to be replaced is the window procedure.  By supplying our own we will be able to finally modify that `WM_MINMAXINFO` message.  In `Example 1` we showed how to call `SetWindowLongPtr`.  `Example 2` shows what the custom procedure looks like:
 
 <pre class='brush: cpp;'>
 // The custom window procedure, executed in-process, to manipulate the WM_MINMAXINFO message.
@@ -102,6 +102,14 @@ LRESULT CALLBACK MinMaxInfoHandler(HWND hwnd, UINT message, WPARAM wParam, LPARA
 Note that we only handle the `WM_GETMINMAXINFO` message and delegate all others to the original window procedure.  Additionally, we uninstall the custom procedure as soon as we've accomplished what we need to.
 
 We modify the `ptMaxTrackSize` component of the `MINMAXINFO` struct, which is itself a `POINT` struct, having an `x` and a `y` component.  These should be set large enough to handle the full canvas plus the window chrome that surrounds the main client area.  Once this is done, you should be able to size the window large enough to obviate the need for scrollbars.
+
+Fig. 1 shows how this all ties together between a theoretical screenshot.exe process taking full canvas screenshots in Internet Explorer.
+
+<div class="figure">
+  <img src="/images/how-to-take-full-page-screenshots-in-windows/comprehensive-system-diagram.png" />
+  
+  Fig. 1: Comprehensive interaction diagram for taking full page screenshots.
+</div>
 
 
 Capturing the Canvas Contents
@@ -164,6 +172,8 @@ Taking full page or full canvas screenshots in Windows can be tricky, but the me
 Acknowledgments
 ---------------
 
-- gyrm for SnapsIE
-- Jim Evans for more IE work on selenium
-- Other links from my github fork comments
+- Haw-Bin Chai for [SnapsIE](http://snapsie.sourceforge.net/), which served as a basis for much of the work I did.
+- Jim Evans for more [IE screenshot work on selenium](http://code.google.com/p/selenium/issues/detail?id=326&colspec=ID%20Stars%20Type%20Status%20Priority%20Milestone%20Owner%20Summary&start=100), which handled IE8 a bit more gracefully than SnapsIE did.
+- [Jeff Rafter](http://neverlet.be/), who helped me debug all sorts of issues when developing the foundation for this article and then served as a peer reviewer of the content.
+- [sunnyandy](http://www.codeguru.com/forum/showthread.php?p=1889928), who had the closest answer on how to take full screen screenshots that I was able to find.
+- Igor Tandetnik, who knows VC++ better than any human I'm aware of.
