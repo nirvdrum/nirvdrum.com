@@ -6,19 +6,18 @@ title: How to Take Full Page or Full Canvas Screenshots in Windows
 Introduction
 ------------
 
-When developing a service for detecting Web browser rendering issues, it's very convenient to be able to capture the contents of the entire browser canvas, rather than just the current viewport.  It lets the user see how their content looks from a holistic perspective.
+While developing [MogoTest](http://mogotest.com/), a service for detecting Web browser rendering issues, I found it necessary to be able to capture the contents of the entire browser canvas rather than just the current viewport.  A full page screenshot lets the user see how their content looks from a holistic perspective.  Unfortunately, capturing all of the content clipped by the scrollable viewport is not a very straightforward process.
 
-One approach to grabbing the full canvas is to take a screenshot and then scroll the view port to display all the previously hidden sections, stitching all of the images together to form one composite that represents the full canvas contents.  While this generally works, it fails if there are any fixed position elements on the page or if there is ECMAScript in place to modify the DOM on scroll events because in both cases the very act of scrolling modifies the canvas's contents.  It would be better then to capture the entire canvas without scrolling.
+One approach to grabbing the full canvas is to take a screenshot and then scroll the viewport to display all the previously hidden sections, stitching all of the images together to form one composite that represents the full canvas contents.  While this generally works, it fails if there are any fixed position elements on the page or if there is ECMAScript in place to modify the DOM on scroll events because in both cases the very act of scrolling modifies the canvas's contents.  It would be better then to capture the entire canvas without scrolling.
 
-The Problem with Virtual Screen Coordinates
--------------------------------------------
+The Problem with Making Windows Large Enough to Remove Scrollbars
+-----------------------------------------------------------------
 
 Windows does not allow windows to be larger than the virtual screen resolution by default.  The virtual screen resolution is defined as the vertical and horizontal span of all connected displays.  If you have a single display, the current screen resolution will have a 1:1 match with the virtual screen resolution and if you have two displays side-by-side, the virtual screen resolution will be the height of the lowest resolution by the sum of the two horizontal screen resolutions.
 
-Resizing the window to display the entire canvas contents, thus, requires some trickery in handling the virtual screen coordinates.  As it turns out, every window is sent a [`WM_GETMINMAXINFO` message](http://msdn.microsoft.com/en-us/library/ms632626%28VS.85%29.aspx) just before the window's screen coordinates or size is changed.  `WM_GETMINMAXINFO` passes as its `lParam` a [`MINMAXINFO` value](http://msdn.microsoft.com/en-us/library/ms632605%28VS.85%29.aspx) which contains the virtual screen coordinates as the the `ptMaxTrackSize` member.  Modifying the `lParam` before the window receives the message would allow us to effectively change the virtual screen resolutions on a per-process basis.
+Resizing the window to display the entire canvas contents, thus, requires some trickery in handling the virtual screen dimensions.  As it turns out, every window is sent a [`WM_GETMINMAXINFO` message](http://msdn.microsoft.com/en-us/library/ms632626%28VS.85%29.aspx) just before the window's screen coordinates or size is changed.  `WM_GETMINMAXINFO` passes as its `lParam` a [`MINMAXINFO` value](http://msdn.microsoft.com/en-us/library/ms632605%28VS.85%29.aspx) which contains the virtual screen dimensions as the the `ptMaxTrackSize` member.  Modifying the `lParam` before the window receives the message would allow us to effectively change the virtual screen resolutions on a per-process basis.
 
 If you have access to the source code of the application you'd like to capture the full canvas contents of, the solution is simple: just modify your message processing loop to handle `WM_GETMINMAXINFO` messages and modify the `lParam` as necessary.  In the general case, however, you won't be able to modify the binary so you'll have to modify the executing process's address space to inject your own message handler.
-
 
 While the general concept is rather straightforward, the implementation is fairly convoluted.  At the core of it, the complexity is caused by the `WM_GETMINMAXINFO` message being sent rather than retrieved by the window.
 
@@ -28,7 +27,7 @@ Tricking Windows into Letting you Resize the Window Larger than the Screen
 
 The Win32 API allows applications to monitor global event message traffic by setting up a hook procedure via the [`SetWindowsHookEx` function](http://msdn.microsoft.com/en-us/library/ms644990%28VS.85%29.aspx).  This is how utilities like Spy++ are able to tell what messages are being sent to a program.  As of this writing, there are thirteen different [types of hooks](http://msdn.microsoft.com/en-us/library/ms644959%28VS.85%29.aspx#types), each with its own context and execution point in the global chain.
 
-If you're like me, you'd probably try to register a `WH_GETMESSAGE` hook with `GetMsgProc`.  On the outset it seems logical enough: intercept the `WM_GETMINMAXINFO` message before `GetMessage` or `PeekMessage` is called.  This will not work, however, and you will waste a lot of time trying to make it work.  The nuance here is that `WM_GETMINMAXINFO` is sent to the window -- the window does not poll for it -- and as such a `WH_GETMESSAGE` hook will never see the message.
+If you're like me, you'd probably try to register a `WH_GETMESSAGE` hook with `GetMsgProc`.  On the outset it seems logical enough: intercept the `WM_GETMINMAXINFO` message before `GetMessage` or `PeekMessage` is called and modify accordingly.  This will not work, however, and you will waste a lot of time trying to make it work.  The nuance here is that `WM_GETMINMAXINFO` is sent to the window -- the window does not poll for it -- and as such a `WH_GETMESSAGE` hook will never see the message.
 
 The next seemingly logical hook type to try is `WH_CALLWNDPROC`, which you register with the [`CallWndProc` function](http://msdn.microsoft.com/en-us/library/ms644975%28VS.85%29.aspx).  This type of hook will indeed intercept the `WM_MINMAXINFO` message before the window will, but unfortunately, the hook procedure cannot modify the message.  This is by design and Windows will enforce it; trying to get a reference to the `lParam` to modify the value in memory will not work.
 
@@ -53,18 +52,18 @@ LRESULT WINAPI CallWndProc(int nCode, WPARAM wParam, LPARAM lParam)
         SetProp(cwp->hwnd, L"__original_message_processor__", (HANDLE) proc);
     }
 
-    return CallNextHookEx(nextHook, nCode, wParam, lParam);
+    return CallhkHookEx(hkHook, nCode, wParam, lParam);
 }
 
 // Install the hook procedure in the global hook chain.  DLL_PATH must be
 // a fully qualified path to the DLL file containing the WH_CALLWNDPROC hook procedure.
 HINSTANCE hinstDLL = LoadLibrary(DLL_PATH);
 HOOKPROC hkprcSysMsg = (HOOKPROC)GetProcAddress(hinstDLL, "CallWndProc");
-HHOOK nextHook = SetWindowsHookEx(WH_CALLWNDPROC, hkprcSysMsg, hinstDLL, 0);
+HHOOK hkHook = SetWindowsHookEx(WH_CALLWNDPROC, hkprcSysMsg, hinstDLL, 0);
 </pre>
 <div class='caption'>Example 1: Registering the <code>WH_CALLWNDPROC</code> hook procedure.</div>
 
-[`SetWindowLongPtr`](http://msdn.microsoft.com/en-us/library/ms644898%28VS.85%29.aspx) is an amazing feature of Windows that lets you supply a new function pointer for a predefined set of functions in a Windows process.  The new function can then call out to the original function through a handle to that function.  One of the functions allowed to be replaced is the window procedure.  By supplying our own we will be able to finally modify that `WM_MINMAXINFO` message.  In `Example 1` we showed how to call `SetWindowLongPtr`.  `Example 2` shows what the custom procedure looks like:
+[`SetWindowLongPtr`](http://msdn.microsoft.com/en-us/library/ms644898%28VS.85%29.aspx) is an amazing feature of Windows that lets you supply a new function pointer for a restricted set of functions in a Windows process.  The new function can then call out to the original function through a handle to that function.  One of the functions allowed to be replaced is the window procedure.  By supplying our own we will be able to finally modify that `WM_MINMAXINFO` message.  In `Example 1` we showed how to call `SetWindowLongPtr`.  `Example 2` shows what the custom window procedure looks like:
 
 <pre class='brush: cpp;'>
 // The custom window procedure, executed in-process, to manipulate the WM_MINMAXINFO message.
@@ -82,7 +81,7 @@ LRESULT CALLBACK MinMaxInfoHandler(HWND hwnd, UINT message, WPARAM wParam, LPARA
     {
         MINMAXINFO* minMaxInfo = (MINMAXINFO*) lParam;
  
-        // ptMaxTrackSize corresponds to the screen's virtual coordinates.
+        // ptMaxTrackSize corresponds to the screen's virtual dimensions.
         // MAX_WIDTH and MAX_HEIGHT should be the width and height of the window allowing the full
         // canvas to be displayed without scrollbars.  This is application dependent.
         minMaxInfo->ptMaxTrackSize.x = MAX_WIDTH;
@@ -145,8 +144,8 @@ CImageDC imageDC(image);
 PrintWindow(hwnd, imageDC, PW_CLIENTONLY);
 
 // Remove our `WH_CALLWNDPROC` hook procedure from the global hook chain.
-// nextHook was the return value from the SetWindowsHookEx function call.
-UnhookWindowsHookEx(nextHook);
+// hkHook was the return value from the SetWindowsHookEx function call.
+UnhookWindowsHookEx(hkHook);
 
 // Restore the window to the original dimensions.
 if (isMaximized)
@@ -174,6 +173,7 @@ Acknowledgments
 
 - Haw-Bin Chai for [SnapsIE](http://snapsie.sourceforge.net/), which served as a basis for much of the work I did.
 - Jim Evans for more [IE screenshot work on selenium](http://code.google.com/p/selenium/issues/detail?id=326&colspec=ID%20Stars%20Type%20Status%20Priority%20Milestone%20Owner%20Summary&start=100), which handled IE8 a bit more gracefully than SnapsIE did.
-- [Jeff Rafter](http://neverlet.be/), who helped me debug all sorts of issues when developing the foundation for this article and then served as a peer reviewer of the content.
 - [sunnyandy](http://www.codeguru.com/forum/showthread.php?p=1889928), who had the closest answer on how to take full screen screenshots that I was able to find.
 - Igor Tandetnik, who knows VC++ better than any human I'm aware of.
+- [Jeff Rafter](http://neverlet.be/), who helped me debug all sorts of issues when I was developing the foundation for this article and then served as a peer reviewer of the content.
+- [MogoTest](http://mogotest.com/) for allowing me to spend all this time solving the problem.
