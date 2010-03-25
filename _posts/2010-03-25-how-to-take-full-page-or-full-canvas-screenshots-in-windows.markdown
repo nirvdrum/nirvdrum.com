@@ -175,5 +175,5 @@ Acknowledgments
 - Jim Evans for more [IE screenshot work on selenium](http://code.google.com/p/selenium/issues/detail?id=326&colspec=ID%20Stars%20Type%20Status%20Priority%20Milestone%20Owner%20Summary&start=100), which handled IE8 a bit more gracefully than SnapsIE did.
 - [sunnyandy](http://www.codeguru.com/forum/showthread.php?p=1889928), who had the closest answer on how to take full screen screenshots that I was able to find.
 - Igor Tandetnik, who knows VC++ better than any human I'm aware of.
-- [Jeff Rafter](http://neverlet.be/), who helped me debug all sorts of issues when I was developing the foundation for this article and then served as a peer reviewer of the content.
+- [Jeff Rafter](http://neverlet.be/), who helped me debug all sorts of issues while I was developing the foundation for this article and then served as a peer reviewer of the content.
 - [MogoTest](http://mogotest.com/) for allowing me to spend all this time solving the problem.
