@@ -1,6 +1,7 @@
 ---
 layout: post
 title: On Amazon EC2 Spot Instances
+show_ads: true
 ---
 
 Introduction

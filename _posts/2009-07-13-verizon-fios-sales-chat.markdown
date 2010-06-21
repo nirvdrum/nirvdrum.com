@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Verizon FiOS Sales Chat
+show_ads: true
 ---
 
 Introduction

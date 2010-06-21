@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Composite Index Problem with PostgreSQL and Rails 2.x
+show_ads: true
 ---
 
 Introduction

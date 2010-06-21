@@ -1,6 +1,7 @@
 ---
 layout: post
 title: GitHub Contest Recap
+show_ads: true
 ---
 
 Recently I decided to throw my hat into the [GitHub contest](http://contest.github.com/) ring, the goal of which was to predict repositories that a GitHub user should watch.  It had been some years since I had really done anything intensive with artificial intelligence (AI) and I thought it would be fun.  I was also attracted to the bounty offered: an aged bottle of bourbon and a lifetime large GitHub account.  This post serves as my high-level recap of the contest.

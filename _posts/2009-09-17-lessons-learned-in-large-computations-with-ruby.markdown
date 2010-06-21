@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Lessons Learned in Large Computations with Ruby
+show_ads: true
 ---
 
 Introduction
