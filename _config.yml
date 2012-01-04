@@ -5,7 +5,7 @@ lsi:         false
 server_port: 4000
 pygments:    false
 markdown:    rdiscount
-permalink:   /:year/:month/:day/:title
+permalink:   /:year/:month/:day/:title.html
 paginate:    6
 maruku:
   use_tex:    false
