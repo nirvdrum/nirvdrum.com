@@ -1,7 +1,6 @@
 ---
 layout: post
 title: How to Take Full Page or Full Canvas Screenshots in Windows
-show_ads: true
 ---
 
 Introduction

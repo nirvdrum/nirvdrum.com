@@ -1,7 +1,6 @@
 ---
 layout: post
 title: Nesting alias_method_chain Calls
-show_ads: true
 ---
 
 Introduction
