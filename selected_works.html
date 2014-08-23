@@ -1,0 +1,53 @@
+---
+layout: default
+title: Selected Works
+---
+
+<div style="margin-top: 10px; margin-left: 25px;">
+	<h2>Performance</h2>
+	<ul>
+		<li><a href="https://github.com/tenderlove/psych/commit/85a1ae2fac470fddc2c06b0f6d55ba94677356a5">Psych &ndash; avoid method_missing (Ruby)</a></li>
+		<li><a href="https://github.com/tenderlove/psych/pull/90">Psych &ndash; regexp collapse (Ruby)</a></li>
+		<li><a href="https://github.com/tenderlove/psych/pull/92">Psych &ndash; reduced regexp comparisons (Ruby)</a></li>
+		<li><a href="https://github.com/tenderlove/psych/pull/93">Psych &ndash; case clause optimization (Ruby)</a></li>
+		<li><a href="https://github.com/rubber/rubber/commit/2c73e2c244bf6437ff997436cf7d97c9a8c20bca">Rubber &ndash; prevent multiple parsing of files (Ruby)</a></li>
+		<li><a href="https://github.com/rubber/rubber/commit/9a4343dc2813d611dad634bd61e72a1c5ff98445">Rubber &ndash; avoid in-line exceptions (Ruby)</a></li>
+		<li><a href="https://github.com/jruby/jruby/pull/1604">JRuby &ndash; speed up requiring libraries by reducing filesystem operations (Java)</a></li>
+		<li><a href="https://github.com/nirvdrum/aenea/commit/259081784933c81747cb0e78f478e640e4a00a55">Aenea &ndash; reduce object allocation &amp; RPC calls (Python)</a></li>
+	</ul>
+
+	<h2>Polish</h2>
+	<ul>
+		<li><a href="https://github.com/rubber/rubber/commit/c6bb4afd2f7b796911ba2901e3e037786e84afa1">Rubber &ndash; exhaustive SSH key configuration validation to cut down on support requests (Ruby)</a></li>
+		<li><a href="https://github.com/nirvdrum/svn2git/commit/d19b9c8136ea6a3b64259c469e24ade4a2980423">svn2git &ndash; removed dependency on process library that didn't work well on Windows (Ruby)</a></li>
+		<li><a href="https://github.com/fog/fog/pull/2319">fog &ndash; fixed tests to run on JRuby so we could enable JRuby in Travis (Ruby)</a></li>
+		<li><a href="https://github.com/SeleniumHQ/selenium/commit/bc1dba867ee457554a3413198a1ee595ef223191">Selenium &ndash; fixed a bunch of spelling issues (Java)</a></li>
+	</ul>
+
+	<h2>Thread-safety:</h2>
+	<ul>
+		<li><a href="https://github.com/nirvdrum/svn2git/commit/0e653a746a7eca65105ce94eaf5b94104d5ceb85">svn2git &ndash; protected access to global STDIN (Ruby)</a></li>
+		<li><a href="https://github.com/nirvdrum/selenium-grid/commit/f5d914c7fb36bdd88d744dddf98b1c08a277176b">Selenium Grid &ndash; allow concurrent reads while preserving atomic writes (Java)</a></li>
+		<li><a href="https://github.com/SeleniumHQ/selenium/commit/d6a1e7ec91118852e1767067d150f9486319230e#diff-d41d8cd98f00b204e9800998ecf8427e">Selenium &ndash; prevent Selenium Grid hub from deadlocking (Java)</a></li>
+	</ul>
+
+	<h2>Debugged Issues:</h2>
+	<ul>
+		<li><a href="https://issues.jboss.org/browse/TORQUE-1198">TorqueBox &ndash; session store creates session on every request, even if session isn't used (Java)</a></li>
+		<li><a href="https://issues.jboss.org/browse/TORQUE-1199">TorqueBox &ndash; clustered session store is an order of magnitude slower than non-clustered (Java)</a></li>
+		<li><a href="https://issues.jboss.org/browse/TORQUE-1200">TorqueBox &ndash; reduce locking for shared JRuby runtimes (Java)</a></li>
+		<li><a href="https://github.com/jruby/jruby/issues/1400">JRuby &ndash; reduce locking in generating object_id (Java)</a></li>
+		<li><a href="https://github.com/jruby/jruby/issues/1532">JRuby &ndash; memory leak in thread-local static classloader references (Java)</a></li>
+		<li><a href="https://github.com/jruby/jruby/issues/1662">JRuby &ndash; Time.parse significantly slower than MRI (Java)</a></li>
+	</ul>
+
+	<h2>Miscellaneous:</h2>
+	<ul>
+		<li><a href="https://github.com/nirvdrum/influxdb/commit/bfdc30982226bf963a7d7de77ae2e25840256956">InfluxDB &ndash; added WITH clause support for GROUP BY clauses (lex/yacc)</a></li>
+		<li><a href="https://github.com/nirvdrum/influxdb/commit/b71c3df510ef401d6e39ce74ceaf3c56262956a6">InfluxDB &ndash; added Go parser support for new WITH clause (Go)</a></li>
+		<li><a href="https://github.com/dictation-toolbox/dragonfly-scripts/commit/7229b32d232ff0575a6a8b4e23ca40018759b85f">dragonfly-scripts &ndash; added a contextual switch for directing dication target (Python)</a></li>
+		<li><a href="https://github.com/fog/fog/pull/672">fog &ndash; wrote a full mock implementation of S3's versioning API (Ruby)</a></li>
+		<li><a href="https://github.com/nirvdrum/SnapsIE/commit/1bb7c9044385e1e6425c23f3a5e58e5addaacd18">Snapsie &ndash; handle faux window maximization when it's actually maximized (C++)</a></li>
+		<li><a href="https://github.com/MiniProfiler/rack-mini-profiler/pull/43">rack-mini-profiler &ndash; stopped thread leak by shutting thread down when runtime is exited (Ruby)</a></li>
+	</ul>
+</div>
