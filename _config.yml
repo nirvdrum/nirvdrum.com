@@ -1,14 +1,14 @@
 # Site settings
 title: Kevin Menard's Weblog
 header-img: img/post-bg-05.jpg
-email: kevin@nirvdrum.com
+email: blog@kevin.nirvdrum.com
 copyright_name: Kevin Menard
 description: "Technical articles by Kevin Menard.  Topics include Ruby, Java, machine learning, and general computing."
 baseurl: ""
 url: "http://nirvdrum.com"
 twitter_username: nirvdrum
-github_username:  nirvdrum
-email_username:  kevin@nirvdrum.com
+github_username: nirvdrum
+email_username: blog@kevin.nirvdrum.com
 
 # Build settings
 markdown: kramdown
