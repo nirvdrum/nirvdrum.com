@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Open Sourcing a Failed Startup
+author: Kevin Menard
 ---
 
 Background

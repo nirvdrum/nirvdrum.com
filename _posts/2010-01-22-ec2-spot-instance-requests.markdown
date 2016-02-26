@@ -1,6 +1,7 @@
 ---
 layout: post
 title: On Amazon EC2 Spot Instances
+author: Kevin Menard
 ---
 
 Introduction
@@ -34,7 +35,7 @@ We use [rubber](http://github.com/wr0ngway/rubber) for our cluster configuration
 
 A sample configuration for a single host in rubber would look like the following rubber.yml extract.
 
-<pre class="brush:ruby">
+{% highlight ruby %}
 # Sample spot instance request configuration in rubber.yml.
 hosts:
   ie8:                         # The instance's hostname
@@ -46,7 +47,7 @@ hosts:
         spot_price: "0.12"     # Max. spot price you are willing to pay
         spot_instance: true    # Default is false.
         spot_instance_request_timeout: 600 # Fall back to on-demand after 5 min.
-</pre>
+{% endhighlight %}
 
 While this example shows configuration for a single host, any option could also be applied globally for all nodes in your cluster and can be overridden on a host-by-host basis.  So, you can vary the maximum price you're willing to pay for a server on a per-instance basis and you can have a combination of on-demand and spot instances in your cluster.
 

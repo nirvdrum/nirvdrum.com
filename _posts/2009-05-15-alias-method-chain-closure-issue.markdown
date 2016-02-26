@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Nesting alias_method_chain Calls
+author: Kevin Menard
 ---
 
 Introduction
@@ -10,16 +11,16 @@ Rails provides a nifty utility in ActiveSupport called `alias_method_chain`. For
 
 More succinctly, the following call:
 
-<pre class="brush:ruby">
+{% highlight ruby %}
 alias_method_chain :number_printer, :filter
-</pre>
+{% endhighlight %}
 
 is effectively the same as:
 
-<pre class="brush:ruby">
+{% highlight ruby %}
 alias_method :number_printer_without_filter, :number_printer
 alias_method :number_printer, :number_printer_with_filter
-</pre>
+{% endhighlight %}
 
 Fig. 1 illustrates how the `alias_method_chain` call changes references to the method definitions like so:
 
@@ -38,10 +39,10 @@ Motivating Example
 
 The <a href="http://github.com/haruska/ninja-decorators/">ninja-decorators project</a> relies heavily on `alias_method_chain` and its usage will be used as the example throughout the remainder of the article.  ninja-decorators gives you `before_filter`, `after_filter`, and `around_filter` functionality outside of Rails controllers.  With these methods you can handle cross-cutting concerns in a class located elsewhere in your Rails app or without having to use Rails at all.  Using the standard examples of security and logging as cross-cutting concerns, we have something like the following:
 
-<pre class="brush:ruby">
+{% highlight ruby %}
 around_filter :secure_around, [:number_printer]
 around_filter :log_around, [:number_printer]
-</pre>
+{% endhighlight %}
 
 Here, we want `:log_around` to decorate `:number_printer` with `:secure_around` applied.  Internally, `around_filter` delegates to `alias_method_chain` to handle method decoration.
 
@@ -60,7 +61,7 @@ The problem with the implementation of `alias_method_chain` is one of definition
 
 To make the discussion a little more concrete, we'll use the following example adapted from the ninja-decorators project.  It is a bit contrived, but should serve well enough as a basis for discussion.
 
-<pre class="brush:ruby">
+{% highlight ruby %}
 require 'activesupport'
   
 class NumberFun
@@ -90,31 +91,31 @@ class NumberFun
 
   around_filter :increment_filter, [:number_printer, :square_printer]
 end
-</pre>
+{% endhighlight %}
 
 `:number_printer` and `:square_printer` are two simple methods.  They take a number in and print out its value or its square, respectively.  `:increment_filter` is a simple "around filter"; it augments a method by incrementing the input argument by 1 before executing the original method.  Running both methods will produce the following in IRB:
 
-<pre class="brush:ruby">
+{% highlight ruby %}
 >> NumberFun.new.number_printer 3
 4
 => nil
 >> NumberFun.new.square_printer 5
 36
 => nil
-</pre>
+{% endhighlight %}
 
 `around_filter` is where all the hard work is being done and is where `alias_method_chain` is employed.  It takes as its arguments a filter method name and a list of method names to decorate with that filter.  For each method to decorate it defines the required "with" method for `alias_method_chain`.  This newly defined method will call the filter method (`:increment_filter` in this case), which will in turn call the original, undecorated method (`:number_printer_without_increment_filter` or `:square_printer_without_increment_filter`) as a block.  Once the "with" method is defined,  `alias_method_chain` is called so that the original method name can be used to transparently call the newly decorated method.
 
 While convoluted (don't worry, it's wrapped up a library), this approach will work dandily until you need to start decorating a method more than once.  For the sake of the example, we'll pretend that we actually want to increment each input argument as two.  In reality, well'd likely want to apply a completely different filter.  The outcome is precisely the same, but to keep things simple, we'll just apply the `:increment_filter` twice:
 
-<pre class="brush:ruby">
+{% highlight ruby %}
 around_filter :increment_filter, [:number_printer, :square_printer]
 around_filter :increment_filter, [:number_printer, :square_printer]
-</pre>
+{% endhighlight %}
 
 Running this through IRB again, we'd likely expect to see `:number_printer` print out `2 + num` for argument `num`.  Instead, the session looks like this:
 
-<pre class="brush:ruby">
+{% highlight ruby %}
 >> NumberFun.new.number_printer 3
 SystemStackError: stack level too deep
 	from /Users/nirvdrum/dev/workspaces/alias_method_chain/blah.rb:6:in `send'
@@ -134,7 +135,7 @@ SystemStackError: stack level too deep
 	from /Users/nirvdrum/dev/workspaces/alias_method_chain/blah.rb:7:in `number_printer_without_around_filter'
 	from /Users/nirvdrum/dev/workspaces/alias_method_chain/blah.rb:7:in `send'
 ... 7586 levels...
-</pre>
+{% endhighlight %}
 
 That's the polite way of telling you that you have infinite recursion, not the expected value of 5.  The issue is that each `around_filter` call defines a new "with" method that calls the "without" method dynamically.  Calling a method by name with `send`, however, only calls the one at the current lexical scope.  Meanwhile, each call to `alias_method_chain` changes the alias target of the "without" method.  As such, we have the execution flow illustrated in Fig. 3 rather than the expected one in Fig. 4.
 
@@ -162,7 +163,7 @@ The problem can be averted with a minor change in `alias_method_chain`.  The ide
 
 A simplified definition is thus:
 
-<pre class="brush:ruby">
+{% highlight ruby %}
 def alias_method_chain(target, feature)
   with_method = "#{target}_with_#{feature}"
   without_method = "#{target}_without_#{feature}"
@@ -171,11 +172,11 @@ def alias_method_chain(target, feature)
   yield if block_given?
   alias_method target, with_method
 end
-</pre>
+{% endhighlight %}
 
 The block passed to alias_method_chain can then take care of the creation of the "with" method, which will have access to the "without" method at the current level.  Breaking away from `around_filter`, we can more easily see how nested `alias_method_chain` calls work with the new definition:
 
-<pre class="brush:ruby">
+{% highlight ruby %}
 class MoreNumberFun
   # Build up a proc that will construct the filtered method
   # Execution of the proc is delayed until we encounter the alias_method_chain call.
@@ -199,17 +200,17 @@ class MoreNumberFun
   alias_method_chain :number_printer, :filter, &filtered_method_builder
   alias_method_chain :number_printer, :filter, &filtered_method_builder
 end
-</pre>
+{% endhighlight %}
 
 In this admittedly convoluted example, the block passed to the `alias_method_chain` calls is built up as a proc first.  This allows us to make the same `alias_method_chain` calls without needing to duplicate code.  The proc gets a reference to `:number_printer_without_filter` and calls it within the newly defined `:number_printer_with_filter`, which for simplicity in the example, provides the same behavior that `:increment_filter` previously did.  This forms a closure and lets each level of "with" and "without" methods to pair up, subsequently avoiding the infinite recursion problem when using just `send` alone.
 
 Running in IRB now, we get the expected behavior of print out of `2 + num` for argument `num`, rather than the stack overflow exception we previously experienced:
 
-<pre class="brush:ruby">
+{% highlight ruby %}
 >> MoreNumberFun.new.number_printer 3
 5
 => nil
-</pre>
+{% endhighlight %}
 
 Conclusion
 ----------

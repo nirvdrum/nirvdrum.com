@@ -1,6 +1,7 @@
 ---
 layout: post
 title: How to Take Full Page or Full Canvas Screenshots in Windows
+author: Kevin Menard
 ---
 
 Introduction
@@ -33,8 +34,9 @@ The next seemingly logical hook type to try is `WH_CALLWNDPROC`, which you regis
 
 And so it goes with all the hook types.  Many look like they'll do what you need, but will fail in some way.  It seems that modifying the `WM_GETMINMAXINFO` message from out of process is not possible.  And largely that's true.  However, we can get creative by supplanting the process's window procedure, which executes in process, by using `SetWindowLongPtr` from the `WH_CALLWNDPROC` hook.  Example 1 shows what that interaction may look like.
 
-<pre class='brush: cpp;'>
+{% highlight cpp %}
 // The WH_CALLWNDPROC hook procedure, executed out-of-process.
+
 LRESULT WINAPI CallWndProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
     CWPSTRUCT* cwp = (CWPSTRUCT*) lParam;
@@ -60,13 +62,14 @@ LRESULT WINAPI CallWndProc(int nCode, WPARAM wParam, LPARAM lParam)
 HINSTANCE hinstDLL = LoadLibrary(DLL_PATH);
 HOOKPROC hkprcSysMsg = (HOOKPROC)GetProcAddress(hinstDLL, "CallWndProc");
 HHOOK hkHook = SetWindowsHookEx(WH_CALLWNDPROC, hkprcSysMsg, hinstDLL, 0);
-</pre>
+{% endhighlight %}
 <div class='caption'>Example 1: Registering the <code>WH_CALLWNDPROC</code> hook procedure.</div>
 
 [`SetWindowLongPtr`](http://msdn.microsoft.com/en-us/library/ms644898%28VS.85%29.aspx) is an amazing feature of Windows that lets you supply a new function pointer for a restricted set of functions in a Windows process.  The new function can then call out to the original function through a handle to that function.  One of the functions allowed to be replaced is the window procedure.  By supplying our own we will be able to finally modify that `WM_MINMAXINFO` message.  In `Example 1` we showed how to call `SetWindowLongPtr`.  `Example 2` shows what the custom window procedure looks like:
 
-<pre class='brush: cpp;'>
+{% highlight cpp %}
 // The custom window procedure, executed in-process, to manipulate the WM_MINMAXINFO message.
+
 LRESULT CALLBACK MinMaxInfoHandler(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     // Grab a reference to the original message processor.
@@ -95,7 +98,7 @@ LRESULT CALLBACK MinMaxInfoHandler(HWND hwnd, UINT message, WPARAM wParam, LPARA
     // All other messages should be handled by the original message processor.
     return CallWindowProc((WNDPROC) originalMessageProc, hwnd, message, wParam, lParam);
 }
-</pre>
+{% endhighlight %}
 <div class='caption'>Example 2: Modifying the <code>WM_GETMINMAXINFO</code> message with a custom window procedure.</div>
 
 Note that we only handle the `WM_GETMINMAXINFO` message and delegate all others to the original window procedure.  Additionally, we uninstall the custom procedure as soon as we've accomplished what we need to.
@@ -120,8 +123,9 @@ One caveat is that if the window is already maximized, Windows will not send it 
 
 All that remains now is to capture the contents, unregister the `WH_CALLWNDPROC` hook, and resize the window to its original dimensions so the user doesn't have to deal with a massive window.  `Example 3` pulls all this code together.
 
-<pre class='brush: cpp;'>
+{% highlight cpp %}
 // Check if the window is maximized.
+
 BOOL isMaximized = IsZoomed(hwnd);
 if (isMaximized)
 {
@@ -159,7 +163,7 @@ else
 
 // Actually save the image file.
 image.Save(CW2T(outputFile));
-</pre>
+{% endhighlight %}
 <div class='caption'>Example 3: Taking the full canvas screenshot.</div>
 
 

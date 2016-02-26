@@ -1,14 +1,20 @@
----
-destination: ./_site
-auto:        false
-lsi:         false
-server_port: 4000
-pygments:    false
-markdown:    rdiscount
-permalink:   /:year/:month/:day/:title.html
-paginate:    6
-maruku:
-  use_tex:    false
-  use_divs:   false
-  png_dir:    images/latex
-  png_url:    /images/latex
+# Site settings
+title: Kevin Menard's Weblog
+header-img: img/post-bg-05.jpg
+email: kevin@nirvdrum.com
+copyright_name: Kevin Menard
+description: "Technical articles by Kevin Menard.  Topics include Ruby, Java, machine learning, and general computing."
+baseurl: ""
+url: "http://nirvdrum.com"
+twitter_username: nirvdrum
+github_username:  nirvdrum
+email_username:  kevin@nirvdrum.com
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+permalink: pretty
+paginate: 5
+exclude: ["less","node_modules","Gruntfile.js","package.json","README.md"]
+
+gems: [jekyll-paginate, jekyll-feed]

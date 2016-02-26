@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Lessons Learned in Large Computations with Ruby
+author: Kevin Menard
 ---
 
 Introduction
