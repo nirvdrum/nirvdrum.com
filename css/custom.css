@@ -1,0 +1,18 @@
+.figure {
+  margin-top: 25px;
+  margin-bottom: 25px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+
+.figure img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 10px;
+}
+
+.figure pre {
+  text-align: left;
+}
