@@ -36,7 +36,6 @@ And so it goes with all the hook types.  Many look like they'll do what you need
 
 {% highlight cpp %}
 // The WH_CALLWNDPROC hook procedure, executed out-of-process.
-
 LRESULT WINAPI CallWndProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
     CWPSTRUCT* cwp = (CWPSTRUCT*) lParam;
@@ -44,19 +43,13 @@ LRESULT WINAPI CallWndProc(int nCode, WPARAM wParam, LPARAM lParam)
     if (WM_GETMINMAXINFO == cwp->message)
     {
         // Inject our own message processor into the process so we
-        
         // can modify the WM_GETMINMAXINFO message.  It is not possible
-        
         // to modify the message from this hook, so the best we can do
-        
         // is inject a function that can.
-        
         LONG_PTR proc = SetWindowLongPtr(cwp->hwnd, GWL_WNDPROC, (LONG_PTR) MinMaxInfoHandler);
         
         // Store a handle to the original window procedure in the window's
-        
         // property list so we can restore the procedure from the custom processor.
-        
         SetProp(cwp->hwnd, L"__original_message_processor__", (HANDLE) proc);
     }
 
@@ -75,42 +68,32 @@ HHOOK hkHook = SetWindowsHookEx(WH_CALLWNDPROC, hkprcSysMsg, hinstDLL, 0);
 
 {% highlight cpp %}
 // The custom window procedure, executed in-process, to manipulate the WM_MINMAXINFO message.
-
 LRESULT CALLBACK MinMaxInfoHandler(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     // Grab a reference to the original message processor.
-    
     HANDLE originalMessageProc = GetProp(hwnd, L"__original_message_processor__");
     RemoveProp(hwnd, L"__original_message_processor__");
  
     // Uninstall this custom window procedure so the next message will use the original procedure.
-    
     SetWindowLongPtr(hwnd, GWL_WNDPROC, (LONG_PTR) originalMessageProc);
  
     // Only handle the message we're interested in.
-    
     if (WM_GETMINMAXINFO == message)
     {
         MINMAXINFO* minMaxInfo = (MINMAXINFO*) lParam;
  
         // ptMaxTrackSize corresponds to the screen's virtual dimensions.
-        
         // MAX_WIDTH and MAX_HEIGHT should be the width and height of the window allowing the full
-        
         // canvas to be displayed without scrollbars.  This is application dependent.
-        
         minMaxInfo->ptMaxTrackSize.x = MAX_WIDTH;
         minMaxInfo->ptMaxTrackSize.y = MAX_HEIGHT;
  
         // We're not going to pass this message onto the original message processor, so we should
-        
         // return 0, per the contract for the WM_GETMINMAXINFO message.
-        
         return 0;
     }
  
     // All other messages should be handled by the original message processor.
-    
     return CallWindowProc((WNDPROC) originalMessageProc, hwnd, message, wParam, lParam);
 }
 {% endhighlight %}
@@ -140,7 +123,6 @@ All that remains now is to capture the contents, unregister the `WH_CALLWNDPROC`
 
 {% highlight cpp %}
 // Check if the window is maximized.
-
 BOOL isMaximized = IsZoomed(hwnd);
 if (isMaximized)
 {
@@ -149,32 +131,24 @@ if (isMaximized)
 else
 {
   // Store the window's original dimensions into some local variables.
-
 }
 
 // Set the window to its new dimensions.  There are a variety of ways to do this.
 
-
 // Note that CImage is part of ATL.  If you want to use strict Win32 API for DIBs, you
-
 // can do so; it's just much more complicated.
-
 CImage image;
 image.Create(imageWidth, imageHeight, 24);
 CImageDC imageDC(image);
 
 // Capture the contents of the client area to our image DC.
-
 PrintWindow(hwnd, imageDC, PW_CLIENTONLY);
 
 // Remove our `WH_CALLWNDPROC` hook procedure from the global hook chain.
-
 // hkHook was the return value from the SetWindowsHookEx function call.
-
 UnhookWindowsHookEx(hkHook);
 
 // Restore the window to the original dimensions.
-
 if (isMaximized)
 {
     ShowWindow(hwnd, SW_MAXIMIZE);
@@ -182,11 +156,9 @@ if (isMaximized)
 else
 {
     // Set the window to its original dimensions.
-
 }
 
 // Actually save the image file.
-
 image.Save(CW2T(outputFile));
 {% endhighlight %}
 <div class='caption'>Example 3: Taking the full canvas screenshot.</div>
