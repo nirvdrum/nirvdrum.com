@@ -16,3 +16,12 @@
 .figure pre {
   text-align: left;
 }
+
+dl {
+  margin-left: 20px;
+  margin-bottom: 30px;
+}
+
+dd {
+  margin-bottom: 20px;
+}
