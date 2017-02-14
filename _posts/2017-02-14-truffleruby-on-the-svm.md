@@ -57,10 +57,12 @@ Turning our attention to a more real world application, I ran the set of languag
 These specs look and run very similarly to a typical application's test suite.
 I removed JRuby and Rubinius from this evaluation because they don't pass the same set of specs that TruffleRuby & MRI do, confounding the results.
 
-|                      | Real Time (s) | Max RSS (MB) |
-|----------------------|:-------------:|-------------:|
+|                                  | Real Time (s) | Max RSS (MB) |
+|----------------------------------|:-------------:|-------------:|
 | TruffleRuby SVM 0.20             | 9.00          | 1,364.1      |
 | TruffleRuby JVM<sup>2</sup> 0.20 | 68.38         | 560.8        |
+| JRuby<sup>3</sup> 9.1.7.0        | 37.57         | 380.6        |
+| Rubinius<sup>3</sup>  3.69       | 7.18          | 112.6        |
 | MRI 2.4.0                        | 1.01          | 13.7         |
 
 Test suites like this are generally hard on optimizing runtimes.
@@ -140,4 +142,11 @@ If you're interested in implementing a language on Truffle, I suggest checking o
 <small>
   Due to a bug in GraalVM 0.20, the Ruby Spec Suite language specs do not run with runtime compilation enabled.
   For this evaluation I ran with a stock JVM, while the startup tests report the JVM with Graal.
+</small>
+
+<sup>3</sup>
+<small>
+  Neither JRuby nor Rubinius pass 100% of the language specs from the Ruby Spec Suite.
+  As a result, they error out on some specs that TruffleRuby and MRI pass.
+  Since they're not executing the same code the recorded time and memory values shouldn't be taken as definitive.
 </small>
