@@ -122,7 +122,7 @@ Conclusion
 The Substrate VM provides Truffle-based languages, such as TruffleRuby, with an incredible new way to deliver a language runtime.
 If you've been following the TruffleRuby project, you likely know we've been talking about the SVM for the past couple years as our solution to solving our startup time problem.
 I'm excited to say it wasn't vaporware!
-The results for TruffleRuby on SVM thus far are extremely promising and I think the release of SVM marks a new evolutionary phase of the TruffleRuby project.
+The results for TruffleRuby on the SVM thus far are extremely promising and I think the release of the SVM marks a new evolutionary phase of the TruffleRuby project.
 
 To me, one of the most amazing parts of all this is that the same TruffleRuby codebase is used to target the JVM, the GraalVM, and now the SVM.
 You no longer have to choose between fast startup and peak peformance &mdash; just use the best VM for your given context.
