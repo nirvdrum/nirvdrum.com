@@ -102,7 +102,7 @@ The final output is a version of the Truffle language interpreter fully compiled
 As an added benefit, the binary size is considerably smaller than the JVM's because all the unused classes and methods are excluded.
 
 This is a powerful new addition to the Truffle toolchain.
-In addition to an optimizing JIT, GC, profiler, debugger, and built-in polyglot support, by implementing your language on top of Truffle you now get an ahead-of-time compiler.
+In addition to an optimizing JIT, GC, profiler, debugger, and built-in polyglot support, by implementing your language on top of Truffle you now get an ahead-of-time compiler for your interpreter.
 
 As with all technology, there are trade-offs to targeting the Substrate VM.
 In order to perform its static analysis, all code to be included in the binary must be statically reachable.
