@@ -2,7 +2,6 @@
 layout: post
 title: TruffleRuby on the Substrate VM
 author: Kevin Menard
-draft: true
 ---
 
 Introduction
