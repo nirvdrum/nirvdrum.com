@@ -71,39 +71,39 @@ However, this is a relative performance reduction from what we saw with the simp
 
 At first blush, the increased max RSS value is concerning.
 The big difference here is that the SVM has a new generational garbage collector (GC) that's different from the JVM's.
-The SVM AOT compiler uses a 1 GB young generation size and a 3 GB old generation size by default.
+The SVM ahead-of-time (AOT) compiler uses a 1 GB young generation size and a 3 GB old generation size by default.
 That means the GC won't even start collecting until TruffleRuby has allocated 1 GB of memory.
 Over the course of those specs we generate a lot of garbage.
-Fortunately, this isn't an inherent limitation of either TruffleRuby or the SVM; SVM can be used applications other than TruffleRuby and simply defaults to a large heap as a conservative measure.
+Fortunately, this isn't an inherent limitation of either TruffleRuby or the SVM; the SVM can be used for applications other than TruffleRuby and simply defaults to a large heap as a conservative measure.
 For future releases we'll look for better defaults for our needs.
 
-So, we haven't quite caught up to MRI yet but we're quickly closing the gap.
+The numbers show we haven't quite caught up to MRI yet but we're quickly closing the gap.
 As both the SVM and TruffleRuby continue to mature, we expect we'll be able to approach MRI's level of responsiveness.
 I think these initial results suggest the approach is viable and that our goal is realistic.
 We're currently on a monthly release schedule and will continue to track these metrics.
 
 If you've held off using TruffleRuby due to concerns about startup performance, now is a great time to [experiment with it](https://github.com/graalvm/truffleruby).
 Just keep in mind that this is an early release and there are certainly bugs.
-But, we have an open [issue tracker](https://github.com/graalvm/truffleruby/issues) and love receiving reports from real workloads.
+We do have an open [issue tracker](https://github.com/graalvm/truffleruby/issues) and love receiving reports from real workloads.
 
 
 More about the Substrate VM
 ---------------------------
 
 The Substrate VM is a project under the GraalVM umbrella at Oracle Labs, headed by Christian Wimmer.
-The basic idea behind the SubstrateVM is to provide a new distribution mechanism for languages offered in Truffle.
-The Truffle DSL and framework are Java-based, which means languages wishing to make use of Truffle must also be authored in Java.
+The basic idea behind the Substrate VM is to provide a new distribution mechanism for languages authored with Truffle.
+The Truffle framework is Java-based, which means languages wishing to make use of Truffle must also be written in Java.
 Authoring a language, such as Ruby, in a high level language like Java brings many advantages such as excellent IDEs, refactoring capabilities, performance &amp; analysis tools, and a codebase that's easy to maintain.
 However, it also brings with it disadvantages such as slower startup time, increased memory usage, and distribution difficulties.
 
 The Substrate VM addresses those deficiencies by producing a static binary of a Truffle language runtime<a href="#footnote_4"><sup>4</sup></a>.
-It performs an extensive static analysis of the runtime, noting which classes and methods are used &mdash; only this set will be compiled into native code in the final binary.
-The ahead-of-time (AOT) compiler then performs some up-front optimizations such as trivial method inlining and constructs the metadata necessary for Graal to perform its runtime optimizations.
+It performs an extensive static analysis of the runtime, noting which classes and methods are used and stripping away the ones that are not.
+The AOT compiler then performs some up-front optimizations such as trivial method inlining and constructs the metadata necessary for Graal to perform its runtime optimizations.
 The final output is a version of the Truffle language interpreter fully compiled to native machine code; i.e., there is no Java bytecode anywhere.
-As an added benefit, the binary size is considerably smaller than the JVM's because all the unused classes are excluded.
+As an added benefit, the binary size is considerably smaller than the JVM's because all the unused classes and methods are excluded.
 
 This is a powerful new addition to the Truffle toolchain.
-In addition to an optimizing JIT, GC, instrumentation (profiler &amp; debugger), and built-in polyglot support, by implementing your language on top of Truffle you now get an ahead-of-time compiler.
+In addition to an optimizing JIT, GC, profiler, debugger, and built-in polyglot support, by implementing your language on top of Truffle you now get an ahead-of-time compiler.
 
 As with all technology, there are trade-offs to targeting the Substrate VM.
 In order to perform its static analysis, all code to be included in the binary must be statically reachable.
@@ -121,10 +121,12 @@ Conclusion
 ----------
 
 The Substrate VM provides Truffle-based languages, such as TruffleRuby, with an incredible new way to deliver a language runtime.
-If you've been following the TruffleRuby project, you likely know we've been talking about SVM for the past couple years as our solution to solving our startup time problem.
+If you've been following the TruffleRuby project, you likely know we've been talking about the SVM for the past couple years as our solution to solving our startup time problem.
 I'm excited to say it wasn't vaporware!
 The results for TruffleRuby on SVM thus far are extremely promising and I think the release of SVM marks a new evolutionary phase of the TruffleRuby project.
 
+To me, one of the most amazing parts of all this is the same TruffleRuby codebase, with a few branch points, is used to target the JVM, the GraalVM, and now the SVM.
+For end users this provides a great deal of flexibility: choose the VM that best suits your application's needs for a given context.
 
 
 Additional Resources
@@ -132,7 +134,7 @@ Additional Resources
 
 If you're interested in learning more about the history of TruffleRuby or get a deeper look at its internals, please take a look at the [collection of resources](http://chrisseaton.com/rubytruffle/) Chris Seaton has assembled.
 Truffle and Graal are active research projects with a rich set of publications <sub>([Truffle](https://github.com/graalvm/truffle/blob/master/docs/Publications.md), [Graal](https://github.com/graalvm/graal-core/blob/master/docs/Publications.md))</sub>.
-If you're interested in implementing a language on Truffle, I suggest checking out the [SimpleLanguage implementation](https://github.com/graalvm/simplelanguage) and watching Christian Wimmer's [walkthrough of the code](https://www.youtube.com/watch?v=FJY96_6Y3a4).
+If you'd like to learn more about implementing a language with Truffle, I suggest checking out the [SimpleLanguage implementation](https://github.com/graalvm/simplelanguage) and watching Christian Wimmer's [walkthrough of the code](https://www.youtube.com/watch?v=FJY96_6Y3a4).
 
 <hr/>
 
