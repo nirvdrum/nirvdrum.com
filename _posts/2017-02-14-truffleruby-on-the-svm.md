@@ -70,21 +70,22 @@ They always start in a cold state, they run for a short period of time, and in t
 For this test suite, which has 2,121 specs and 3,824 assertions, TruffleRuby on the SVM is 6.6 times faster than TruffleRuby on the JVM, shaving almost a full minute off the test suite &mdash; a fairly substantial savings.
 However, this is a relative performance reduction from what we saw with the simple startup test, suggesting we have additional opportunities to reduce total run time.
 
-Unfortunately, this test suite illustrates a current memory problem when many objects are created.
-The SVM uses a different garbage collector (GC) than the JVM and hasn't had the same amount of time to mature.
-In particular, the SVM doesn't currently have support for [compressed oops](http://docs.oracle.com/javase/7/docs/technotes/guides/vm/performance-enhancements-7.html#compressedOop) which doubles the cost of object pointers in many applications.
-This is really just a matter of time rather than an inherent limitation.
-Additionally, we haven't tuned TruffleRuby for the SVM's GC.
-We'll be investigating this result and will get it fixed for future releases.
+At first blush, the increased max RSS value is concerning.
+The big difference here is that the SVM has a new generational garbage collector (GC) that's different from the JVM's.
+The SVM AOT compiler uses a 1 GB young generation size and a 3 GB old generation size by default.
+That means the GC won't even start collecting until TruffleRuby has allocated 1 GB of memory.
+Over the course of those specs we generate a lot of garbage.
+Fortunately, this isn't an inherent limitation of either TruffleRuby or the SVM; SVM can be used applications other than TruffleRuby and simply defaults to a large heap as a conservative measure.
+For future releases we'll look for better defaults for our needs.
 
-We still have work to do before we catch up to MRI, but we're now in the same ballpark.
-I think with TruffleRuby on the SVM we've moved from "absolutely not" to "not ideal, but acceptable" when deciding whether to use TruffleRuby for daily tasks.
-I know that doesn't sound like a ringing endorsement, but it's a huge hurdle to clear.
-I've seen a lot of interest in TruffleRuby that ends up being tempered by startup time concerns.
-I think the release of TruffleRuby on the SVM demonstrates our approach to solving the problem is viable.
+So, we haven't quite caught up to MRI yet but we're quickly closing the gap.
+As both the SVM and TruffleRuby continue to mature, we expect we'll be able to approach MRI's level of responsiveness.
+I think these initial results suggest the approach is viable and that our goal is realistic.
+We're currently on a monthly release schedule and will continue to track these metrics.
 
-Keep in mind this is the same TruffleRuby codebase running on both virtual machines.
-We essentially get this performance gain for free by implementing the language with Truffle!
+If you've held off using TruffleRuby due to concerns about startup performance, now is a great time to [experiment with it](https://github.com/graalvm/truffleruby).
+Just keep in mind that this is an early release and there are certainly bugs.
+But, we have an open [issue tracker](https://github.com/graalvm/truffleruby/issues) and love receiving reports from real workloads.
 
 
 More about the Substrate VM
@@ -93,15 +94,19 @@ More about the Substrate VM
 The Substrate VM is a project under the GraalVM umbrella at Oracle Labs, headed by Christian Wimmer.
 The basic idea behind the SubstrateVM is to provide a new distribution mechanism for languages offered in Truffle.
 The Truffle DSL and framework are Java-based, which means languages wishing to make use of Truffle must also be authored in Java.
-Authoring a language, such as Ruby, in a high level language like Java brings many advantages, such as excellent IDEs, refactoring capabilities, performance &amp; analysis tools, and a codebase that's easy to maintain.
+Authoring a language, such as Ruby, in a high level language like Java brings many advantages such as excellent IDEs, refactoring capabilities, performance &amp; analysis tools, and a codebase that's easy to maintain.
 However, it also brings with it disadvantages such as slower startup time, increased memory usage, and distribution difficulties.
 
-The SubstrateVM aims to address the disadvantages while preserving the good stuff.
-By stripping out the JDK classes not needed by a guest language, performing up-front optimizations during ahead-of-time compilation, and retaining the metadata necessary for Graal to perform online optimization of a guest program, SubstrateVM is able to produce a compact static binary with fast startup time and reduced memory overhead.
+The Substrate VM addresses those deficiencies by producing a static binary of a Truffle language runtime<sup>4</sup>.
+It performs an extensive static analysis of the runtime, noting which classes and methods are used &mdash; only this set will be compiled into native code in the final binary.
+The ahead-of-time (AOT) compiler then performs some up-front optimizations such as trivial method inlining and constructs the metadata necessary for Graal to perform its runtime optimizations.
+The final output is a version of the Truffle language interpreter fully compiled to native machine code; i.e., there is no Java bytecode anywhere.
+As an added benefit, the binary size is considerably smaller than the JVM's because all the unused classes are excluded.
+
 This is a powerful new addition to the Truffle toolchain.
 In addition to an optimizing JIT, GC, instrumentation (profiler &amp; debugger), and built-in polyglot support, by implementing your language on top of Truffle you now get an ahead-of-time compiler.
 
-There are trade-offs to targeting the Substrate VM.
+As with all technology, there are trade-offs to targeting the Substrate VM.
 In order to perform its static analysis, all code to be included in the binary must be statically reachable.
 Consequently, reflection and dynamic class loading can't be used.
 Additionally, arbitrary native code cannot be called.
@@ -109,7 +114,7 @@ The Substrate VM does ship with built-in support for [JNR POSIX](https://github.
 And, as the Substrate VM is still a young project, certain APIs from the JDK might not yet be supported.
 
 For code you have control over, these restrictions might be inconvenient, but are generally manageable.
-However, pulling in arbitrary 3rd party code can create headeaches since it's not quite as easy to avoid paths that don't comply with the SVM's restrictions.
+However, pulling in arbitrary 3rd party code can create headaches since it's not quite as easy to avoid paths that don't comply with the SVM's restrictions.
 The SVM does include a mechanism to replace a method implementation at runtime, much like aspect-oriented programming, but this should be used a last resort measure.
 
 
@@ -149,4 +154,10 @@ If you're interested in implementing a language on Truffle, I suggest checking o
   Neither JRuby nor Rubinius pass 100% of the language specs from the Ruby Spec Suite.
   As a result, they error out on some specs that TruffleRuby and MRI pass.
   Since they're not executing the same code the recorded time and memory values shouldn't be taken as definitive.
+</small>
+
+<sup>4</sup>
+<small>
+  There is no technical reason SVM can't be used with arbitrary Java applications.
+  However, its primary use case and the one driving development is Truffle-based language runtimes.
 </small>
