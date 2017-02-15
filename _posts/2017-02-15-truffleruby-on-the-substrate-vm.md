@@ -113,7 +113,7 @@ And, as the Substrate VM is still a young project, certain APIs from the JDK mig
 
 For code you have control over, these restrictions might be inconvenient, but are generally manageable.
 However, pulling in arbitrary 3rd party code can create headaches since it's not quite as easy to avoid paths that don't comply with the SVM's restrictions.
-The SVM does include a mechanism to replace a method implementation at runtime, much like aspect-oriented programming, but this should be used a last resort measure.
+The SVM does include a mechanism to replace a method implementation at runtime, much like aspect-oriented programming, but this should be used a last resort.
 
 
 Conclusion
