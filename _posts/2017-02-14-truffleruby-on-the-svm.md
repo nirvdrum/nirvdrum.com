@@ -39,7 +39,7 @@ Performance
 
 Isolating startup time from program execution can be a bit tricky.
 Rather than getting mired in the details, I've taken the measurement<sup>1</sup> of an extremely simple program: `ruby -e 'p "Hello, world"'`.
-If you want to follow along, simply [install GraalVM](https://github.com/graalvm/truffleruby/blob/master/doc/user/using-graalvm.md) and build the [TruffleRuby binary](https://github.com/graalvm/truffleruby/blob/master/doc/user/svm.md).
+If you want to follow along, simply [install GraalVM](https://github.com/graalvm/truffleruby/blob/master/doc/user/using-graalvm.md) and [build the TruffleRuby binary](https://github.com/graalvm/truffleruby/blob/master/doc/user/svm.md).
 
 |                      | Real Time (s) | Max RSS (MB) |
 |----------------------|:-------------:|-------------:|
@@ -55,7 +55,6 @@ It's unlikely we'll ever approach MRI's memory consumption because we must retai
 
 Turning our attention to a more real world application, I ran the set of language specs from the [Ruby Spec Suite](https://github.com/ruby/spec).
 These specs look and run very similarly to a typical application's test suite.
-I removed JRuby and Rubinius from this evaluation because they don't pass the same set of specs that TruffleRuby & MRI do, confounding the results.
 
 |                                  | Real Time (s) | Max RSS (MB) |
 |----------------------------------|:-------------:|-------------:|
