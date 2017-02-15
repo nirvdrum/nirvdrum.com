@@ -162,6 +162,6 @@ If you'd like to learn more about implementing a language with Truffle, I sugges
 <a name="footnote_4"></a>
 <sup>4</sup>
 <small>
-  There is no technical reason SVM can't be used with arbitrary Java applications.
+  There is no technical reason the SVM can't be used with arbitrary Java applications.
   However, its primary use case and the one driving development is Truffle-based language runtimes.
 </small>
