@@ -125,8 +125,8 @@ If you've been following the TruffleRuby project, you likely know we've been tal
 I'm excited to say it wasn't vaporware!
 The results for TruffleRuby on SVM thus far are extremely promising and I think the release of SVM marks a new evolutionary phase of the TruffleRuby project.
 
-To me, one of the most amazing parts of all this is the same TruffleRuby codebase, with a few branch points, is used to target the JVM, the GraalVM, and now the SVM.
-For end users this provides a great deal of flexibility: choose the VM that best suits your application's needs for a given context.
+To me, one of the most amazing parts of all this is that the same TruffleRuby codebase is used to target the JVM, the GraalVM, and now the SVM.
+You no longer have to choose between fast startup and peak peformance &mdash; just use the best VM for your given context.
 
 
 Additional Resources
