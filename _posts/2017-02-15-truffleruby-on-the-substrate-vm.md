@@ -28,7 +28,7 @@ Truffle
 : A self-optimizing AST interpreter framework for Java. When paired with Graal it is able to perform partial evaluation on the interpreter and user program to produce tight machine code for the running application.
 
 TruffleRuby
-: An implementation of Ruby based on Truffle. Since it uses Truffle, the core of it is authored in Java, but much of the runtime is written in Ruby.
+: An implementation of Ruby based on Truffle. Since it uses Truffle, the runtime is authored in Java, but much of the core library is written in Ruby.
 
 GraalVM
 : A distribution containing a Graal-enabled JVM and runtimes for Truffle-based languages (currently TruffleRuby, Graal.js, and FastR) from Oracle Labs.
@@ -162,6 +162,6 @@ If you'd like to learn more about implementing a language with Truffle, I sugges
 <a name="footnote_4"></a>
 <sup>4</sup>
 <small>
-  There is no technical reason the SVM can't be used with arbitrary Java applications.
+  There is no technical reason SVM can't be used with arbitrary Java applications.
   However, its primary use case and the one driving development is Truffle-based language runtimes.
 </small>
