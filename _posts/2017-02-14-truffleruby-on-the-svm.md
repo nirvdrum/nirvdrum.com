@@ -38,7 +38,7 @@ Performance
 -----------
 
 Isolating startup time from program execution can be a bit tricky.
-Rather than getting mired in the details, I've taken the measurement<sup>1</sup> of an extremely simple program: `ruby -e 'p "Hello, world"'`.
+Rather than getting mired in the details, I've taken the measurement<a href="#footnote_1"><sup>1</sup></a> of an extremely simple program: `ruby -e 'p "Hello, world"'`.
 If you want to follow along, simply [install GraalVM](https://github.com/graalvm/truffleruby/blob/master/doc/user/using-graalvm.md) and [build the TruffleRuby binary](https://github.com/graalvm/truffleruby/blob/master/doc/user/svm.md).
 
 |                      | Real Time (s) | Max RSS (MB) |
@@ -56,13 +56,13 @@ It's unlikely we'll ever approach MRI's memory consumption because we must retai
 Turning our attention to a more real world application, I ran the set of language specs from the [Ruby Spec Suite](https://github.com/ruby/spec).
 These specs look and run very similarly to a typical application's test suite.
 
-|                                  | Real Time (s) | Max RSS (MB) |
-|----------------------------------|:-------------:|-------------:|
-| TruffleRuby SVM 0.20             | 9.00          | 1,364.1      |
-| TruffleRuby JVM<sup>2</sup> 0.20 | 68.38         | 560.8        |
-| JRuby<sup>3</sup> 9.1.7.0        | 37.57         | 380.6        |
-| Rubinius<sup>3</sup>  3.69       | 7.18          | 112.6        |
-| MRI 2.4.0                        | 1.01          | 13.7         |
+|                                                            | Real Time (s) | Max RSS (MB) |
+|------------------------------------------------------------|:-------------:|-------------:|
+| TruffleRuby SVM 0.20                                       | 9.00          | 1,364.1      |
+| TruffleRuby JVM<a href="#footnote_2"><sup>2</sup></a> 0.20 | 68.38         | 560.8        |
+| JRuby<a href="#footnote_3"><sup>3</sup></a> 9.1.7.0        | 37.57         | 380.6        |
+| Rubinius<a href="#footnote_3"><sup>3</sup></a>  3.69       | 7.18          | 112.6        |
+| MRI 2.4.0                                                  | 1.01          | 13.7         |
 
 Test suites like this are generally hard on optimizing runtimes.
 They always start in a cold state, they run for a short period of time, and in the case of JVM-based languages they incur a high degree of overhead when spawning new processes.
@@ -96,7 +96,7 @@ The Truffle DSL and framework are Java-based, which means languages wishing to m
 Authoring a language, such as Ruby, in a high level language like Java brings many advantages such as excellent IDEs, refactoring capabilities, performance &amp; analysis tools, and a codebase that's easy to maintain.
 However, it also brings with it disadvantages such as slower startup time, increased memory usage, and distribution difficulties.
 
-The Substrate VM addresses those deficiencies by producing a static binary of a Truffle language runtime<sup>4</sup>.
+The Substrate VM addresses those deficiencies by producing a static binary of a Truffle language runtime<a href="#footnote_4"><sup>4</sup></a>.
 It performs an extensive static analysis of the runtime, noting which classes and methods are used &mdash; only this set will be compiled into native code in the final binary.
 The ahead-of-time (AOT) compiler then performs some up-front optimizations such as trivial method inlining and constructs the metadata necessary for Graal to perform its runtime optimizations.
 The final output is a version of the Truffle language interpreter fully compiled to native machine code; i.e., there is no Java bytecode anywhere.
@@ -136,18 +136,21 @@ If you're interested in implementing a language on Truffle, I suggest checking o
 
 <hr/>
 
+<a name="footnote_1"></a>
 <sup>1</sup>
 <small>
   All measurements were taken on an i7-4930K running at 4.1 GHz and 48 GB RAM.
   The operating system was Ubuntu 16.04.1 with a 4.4 Linux kernel.
 </small>
 
+<a name="footnote_2"></a>
 <sup>2</sup>
 <small>
   Due to a bug in GraalVM 0.20, the Ruby Spec Suite language specs do not run with runtime compilation enabled.
   For this evaluation I ran with a stock JVM, while the startup tests report the JVM with Graal.
 </small>
 
+<a name="footnote_3"></a>
 <sup>3</sup>
 <small>
   Neither JRuby nor Rubinius pass 100% of the language specs from the Ruby Spec Suite.
@@ -155,6 +158,7 @@ If you're interested in implementing a language on Truffle, I suggest checking o
   Since they're not executing the same code the recorded time and memory values shouldn't be taken as definitive.
 </small>
 
+<a name="footnote_4"></a>
 <sup>4</sup>
 <small>
   There is no technical reason SVM can't be used with arbitrary Java applications.
