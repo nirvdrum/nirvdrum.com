@@ -72,6 +72,16 @@
 <!-- Custom Theme JavaScript -->
 <script src="{{ "/js/clean-blog.min.js " | prepend: site.baseurl }}"></script>
 
+<!-- Lightbox -->
+<script src="{{ "/js/ekko-lightbox.js " | prepend: site.baseurl }}"></script>
+
+<script type="text/javascript">
+$(document).on('click', '[data-toggle="lightbox"]', function(event) {
+    event.preventDefault();
+    $(this).ekkoLightbox();
+});
+</script>
+
 <!-- Google Analytics. --> 
 <script type="text/javascript">
    var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");

@@ -25,3 +25,9 @@ dl {
 dd {
   margin-bottom: 20px;
 }
+
+pre code {
+  overflow: auto;
+  word-wrap: normal;
+  white-space: pre;
+}
