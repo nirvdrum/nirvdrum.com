@@ -31,3 +31,7 @@ pre code {
   word-wrap: normal;
   white-space: pre;
 }
+
+.ekko-lightbox-nav-overlay a {
+  color: black;
+}
