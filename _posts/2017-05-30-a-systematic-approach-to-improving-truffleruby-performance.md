@@ -409,6 +409,12 @@ But you can get pretty far with pattern matching after learning the basics.
 You can easily test out a hypothesis in a high level language (Java or Ruby, in this case) and compare the before & after metrics.
 To me, that's incredibly powerful.
 
+Acknowledgements
+----------------
+
+Pulling all of this info together took quite a while.
+Many thanks to [Chris Seaton](https://twitter.com/chrisgseaton), [Benoit Daloze](https://twitter.com/eregontp), and [Petr Chalupa](https://twitter.com/pitr_ch) for reviewing drafts, suggesting improvements, and catching errors.
+
 <hr/>
 
 <a name="footnote_1"></a>
