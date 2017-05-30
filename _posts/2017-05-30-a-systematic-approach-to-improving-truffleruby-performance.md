@@ -159,8 +159,8 @@ Finally, the unboxed `self` is compared to another int.
 While the original snippet was `loop { 3 == 0 }`, you'll note that graph shows `self` being compared to `3`, not `0` (node 350 in the graph with the constant `3`<a href="#footnote_1"><sup>1</sup></a> as an input).
 In TruffleRuby, we use [value profiles](http://graalvm.github.io/graal/truffle/javadoc/com/oracle/truffle/api/profiles/ValueProfile.html) for all method arguments, including the receiver (`self`).
 Value profiles are a way to speculatively optimize around the constantness of a value.
-They have three basic states: unitialized, constant, and generic.
-The first time a value is seen, the state moves from unitialized to constant.
+They have three basic states: uninitialized, constant, and generic.
+The first time a value is seen, the state moves from uninitialized to constant.
 On subsequent calls, the profile compares the passed value to the cached value.
 If the values are the same it remains in its constant state, but if a new value is seen, it advances to its generic state, where it'll remain for the life of the profile object.
 
@@ -300,7 +300,7 @@ With Truffle, we want to break down methods into their constituent cases.
 Typically a call site for a method isn't going to exercise every branch in that method.
 By breaking a method down into its various cases and specializing for them, we can improve the quality of compiled code markedly for common cases.
 To help us keep call sites monomorphic, Truffle can "split<a href="#footnote_3"><sup>3</sup></a>" a method.
-With method splitting, a clone of the unitialized graph corresponding to a method is made and inserted at a particular call site.
+With method splitting, a clone of the uninitialized graph corresponding to a method is made and inserted at a particular call site.
 That way if two different pieces of code are calling `Array#size` and one always has an empty array and the other always a non-empty array, they each have their own copy of `Array#size` optimized for their respective case.
 
 So, the real problem here isn't that we have multiple specializations for `Array#size`, but rather that the splitting strategy isn't optimal.
