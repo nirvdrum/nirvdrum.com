@@ -2,7 +2,6 @@
 layout: post
 title: A Systematic Approach to Improving TruffleRuby Performance
 author: Kevin Menard
-draft: true
 ---
 
 Summary
