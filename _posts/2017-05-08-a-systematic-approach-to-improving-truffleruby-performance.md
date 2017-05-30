@@ -419,7 +419,7 @@ To me, that's incredibly powerful.
 </small>
 
 <a name="footnote_1"></a>
-<sup>1</sup>
+<sup>2</sup>
 <small>
   Calling this a "large" graph is a bit misleading.
   Certainly it's larger than any other graph in the blog post, but it's actually quite small by Truffle standards.
@@ -427,7 +427,7 @@ To me, that's incredibly powerful.
 </small>
 
 <a name="footnote_2"></a>
-<sup>2</sup>
+<sup>3</sup>
 <small>
   In the original ["One VM to Rule Them All"](https://pdfs.semanticscholar.org/8251/bd1f9496b61e7418b96a816f31477de4c75d.pdf) paper, method splitting is referred to as "tree cloning."
   You can consult the paper for a more thorough treatment of the topic.
