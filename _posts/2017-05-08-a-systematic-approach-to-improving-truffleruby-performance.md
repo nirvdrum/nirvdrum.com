@@ -60,7 +60,7 @@ We've simplified that a bit in TruffleRuby by way of our [jt.rb tool](https://gi
 To see the trace output for `Fixnum#==` call, I ran:
 
 ```bash
-GRAALVM_BIN=path/to/graalvm-0.22/bin/java ruby tool/jt.rb --trace -e 'loop { 3 == 0 }'
+GRAALVM_BIN=path/to/graalvm-0.22/bin/java tool/jt.rb --trace -e 'loop { 3 == 0 }'
 ```
 
 That yielded the following trace information:
@@ -108,7 +108,7 @@ You can instruct your Truffle language to dump graph data with the `-Dgraal.Dump
 The TruffleRuby `jt` tool makes this easier as well, by way of the `--igv` and `--full` flags.
 
 ```bash
-GRAALVM_BIN=path/to/graalvm-0.22/bin/java ruby tool/jt.rb --igv --full -e 'loop { 3 == 0 }'
+GRAALVM_BIN=path/to/graalvm-0.22/bin/java tool/jt.rb --igv --full -e 'loop { 3 == 0 }'
 ```
 
 IGV will show the compiler graph after each phase of compilation.
@@ -194,8 +194,8 @@ We can run through the entire analysis process for the `Array#size` call as well
 Note that TruffleRuby has two implementations for for this method: one for empty arrays and one for non-empty arrays.
 
 ```bash
-GRAALVM_BIN=path/to/graalvm-0.22/bin/java ruby tool/jt.rb --trace -e 'x = []; loop { x.size }'
-GRAALVM_BIN=path/to/graalvm-0.22/bin/java ruby tool/jt.rb --trace -e 'x = [1, 2, 3]; loop { x.size }'
+GRAALVM_BIN=path/to/graalvm-0.22/bin/java tool/jt.rb --trace -e 'x = []; loop { x.size }'
+GRAALVM_BIN=path/to/graalvm-0.22/bin/java tool/jt.rb --trace -e 'x = [1, 2, 3]; loop { x.size }'
 ```
 
 I'll skip the command-line trace info for these executions and collapse their trace data together into the same table:
@@ -234,7 +234,7 @@ Now that we've seen what the `Fixnum#==` and `Array#size` methods look like on t
 For this analysis, I ran the Ruby language specs:
 
 ```bash
-GRAALVM_BIN=path/to/graalvm-0.22/bin/java ruby tool/jt.rb test --graal :language
+GRAALVM_BIN=path/to/graalvm-0.22/bin/java tool/jt.rb test --graal :language
 ```
 
 This time, the trace details look a bit more interesting:
