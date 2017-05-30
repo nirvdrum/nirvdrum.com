@@ -100,9 +100,8 @@ Visualizing the Compiler
 ------------------------
 
 To gain more insight into the `Fixnum#==` method, we can also visualize the transformations of the Truffle AST to a lowered graph using a tool known as the [Ideal Graph Visualizer (IGV)](http://ssw.jku.at/General/Staff/TW/igv.html).
-To start IGV, it's easiest to clone the [Graal repository](https://github.com/graalvm/graal).
-You'll also need to clone the [mx repository](https://github.com/graalvm/mx) and add that to your PATH.
-Then you can `cd` into the _graal/compiler_ directory and run `mx igv`.
+To start IGV, [download a build](https://lafo.ssw.uni-linz.ac.at/pub/idealgraphvisualizer/), unzip it, cd into the unzipped directory, then run `./bin/idealgraphvisualizer`.
+
 
 Once running, we'll feed data into IGV over the network.
 You can instruct your Truffle language to dump graph data with the `-Dgraal.Dump=Truffle` system property & value.
