@@ -7,7 +7,7 @@ excerpt: |-
   I wrote about how to accept self-signed SSL certificates for Selenium 1 almost 3 years ago.  At the time, Selenium 2 hadn't seen an official release yet so I was sticking with the more stable Selenium 1 (now the Selenium RC protocol in Selenium 2).  A lot has changed in the world of Selenium since then and I thought it was time to provide a new post with modern information, based upon the Selenium WebDriver drivers.
 ---
 
-I wrote about [how to accept self-signed SSL certificates for Selenium 1](/2010/04/13/how-to-accept-self-signed-ssl-certificates-in-selenium/) almost 3 years ago.  At the time, Selenium 2 hadn't seen an official release yet so I was sticking with the more stable Selenium 1 (now the Selenium RC protocol in Selenium 2).  A lot has changed in the world of Selenium since then and I thought it was time to provide a new post with modern information, based upon the Selenium WebDriver drivers.  If you're looking for info on Selenium RC, please read the older article as it is still relevant.
+I wrote about [how to accept self-signed SSL certificates for Selenium 1](/2010/04/13/how-to-accept-self-signed-ssl-certificates-in-selenium.html) almost 3 years ago.  At the time, Selenium 2 hadn't seen an official release yet so I was sticking with the more stable Selenium 1 (now the Selenium RC protocol in Selenium 2).  A lot has changed in the world of Selenium since then and I thought it was time to provide a new post with modern information, based upon the Selenium WebDriver drivers.  If you're looking for info on Selenium RC, please read the older article as it is still relevant.
 
 Built-in Driver Support
 -----------------------
