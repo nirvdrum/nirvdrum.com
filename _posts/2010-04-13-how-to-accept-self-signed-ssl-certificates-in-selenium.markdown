@@ -9,7 +9,7 @@ excerpt: |-
 
 <div class='alert alert-block alert-info'>
   This article was originally written for Selenium 1 (also known as Selenium RC in 
-  Selenium 2).  If you're looking for information on how to accept self-signed SSL certificates in Selenium WebDriver, please check out our <a href='/2013/03/05/how-to-accept-self-signed-ssl-certificates-in-selenium2.html'>updated article</a>.
+  Selenium 2).  If you're looking for information on how to accept self-signed SSL certificates in Selenium WebDriver, please check out my <a href='/2013/03/05/how-to-accept-self-signed-ssl-certificates-in-selenium2.html'>updated article</a>.
 </div>
 
 Accessing pages with self-signed SSL certificates in Selenium can be a bit tricky.  The core of the issue is every major browser raises a security issue when accessing a page using a self-signed SSL certificate.  Since this security check takes effect before the Selenium Javascript can execute, there's no way to instruct the browser to accept the certificate.
