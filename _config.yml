@@ -9,6 +9,8 @@ url: "http://nirvdrum.com"
 twitter_username: nirvdrum
 github_username: nirvdrum
 email_username: blog@kevin.nirvdrum.com
+commento: false
+disqus: true
 
 # Build settings
 markdown: kramdown
