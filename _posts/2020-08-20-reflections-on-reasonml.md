@@ -117,7 +117,7 @@ I think have a pretty good handle on it, but it was a lot of effort to get to th
 
 Moreover, what bindings or libraries do exist often lack a changelog or tagged releases.
 That makes it hard to tell what's changed between releases.
-Several project adopted both when prompted, so I think that's a fixable problem, but many have not.
+Several projects adopted both when prompted, so I think that's a fixable problem, but many have not.
 It's a problem from the top down, as ReasonML [hasn't tagged a release since 2017](https://github.com/facebook/reason/issues/2461).
 It leads to this situation where you need to be "in the know" to figure out what's changing where and when.
 Or, just blindly upgrade, which can lead to the aforementioned compatibility problems.
