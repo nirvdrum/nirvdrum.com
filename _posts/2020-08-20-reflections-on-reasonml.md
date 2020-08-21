@@ -100,7 +100,7 @@ For people completely new to ReasonML, things were broken out of the box.
 It was an unfortunate sequence of events, but variations of it have played out multiple times in the past year.
 When BuckleScript 6.0.0 was released, _graphql_ppx_ was broken and the maintainer of that project had stopped maintaining it.
 That necessitated a fork, which in turn required dependent projects to update their dependencies to work with the new fork.
-It all worked out, but hitting these issues that are largely out of your control, and with such frequency, are really demoralizing.
+It all worked out, but hitting these issues that are largely out of my control, and with such frequency, is really demoralizing.
 As of this writing, [_reason-apollo_ wasn't compatible with the ReasonReact 0.8.0](https://github.com/apollographql/reason-apollo/issues/246).
 
 It might be that ReasonML isn't a great fit for React and GraphQL applications, in which case I just picked the wrong tool for the job.
@@ -113,7 +113,7 @@ The ReasonML community promotes writing bindings for just the parts of a library
 Unfortunately, that means there's a dearth of good bindings to look at as an example and I found the documentation a bit too high-level to be entirely practical.
 BuckleScript's interop facilities are certainly rich, but if you mess something up, it can be incredibly obtuse to work out.
 It's also evolved a lot over several major releases, so any examples you do find may well be out of date.
-I think have a pretty good handle on it, but it was a lot of effort to get to that point, and I don't think it would have been possible at all without help from others on Discord.
+I think I have a pretty good handle on it, but it was a lot of effort to get to that point, and I don't think it would have been possible at all without help from others on Discord.
 
 Moreover, what bindings or libraries do exist often lack a changelog or tagged releases.
 That makes it hard to tell what's changed between releases.
