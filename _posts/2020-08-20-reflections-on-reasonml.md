@@ -30,7 +30,6 @@ I wasn't a fan of it at first, but it eventually started to feel natural for wri
 I think that was perhaps due to ReasonReact's support for JSX.
 
 
-
 How Do I Feel About that Decision?
 ----------------------------------
 
@@ -87,7 +86,7 @@ The only way I found to tell which version of Reason I was using was to run its 
 
 I still don't know how one goes about installing ReasonML standalone.
 There's a package called `reason-cli` that looks like it will do it, but it's wildly out of date.
-Unfortunately, there is documentation floating around telling you to do just that.
+Alas, there is documentation floating around telling you to do just that, which means you'll have a tool that won't run many code examples and it won't be obvious why.
 
 Then there's ReasonReact, which is a dependency you need to add to use, but part of ReasonReact also ships inside BuckleScript.
 Between BuckleScript 7.0.1 and 7.1.0, a correctness change was made to ReasonReact code shipping within BuckleScript that broke several major projects in the ReasonML ecosystem.
@@ -100,7 +99,7 @@ For people completely new to ReasonML, things were broken out of the box.
 It was an unfortunate sequence of events, but variations of it have played out multiple times in the past year.
 When BuckleScript 6.0.0 was released, _graphql_ppx_ was broken and the maintainer of that project had stopped maintaining it.
 That necessitated a fork, which in turn required dependent projects to update their dependencies to work with the new fork.
-It all worked out, but hitting these issues that are largely out of my control, and with such frequency, is really demoralizing.
+It all worked out, but hitting these issues that are largely out of your control, and with such frequency, is really demoralizing.
 As of this writing, [_reason-apollo_ wasn't compatible with the ReasonReact 0.8.0](https://github.com/apollographql/reason-apollo/issues/246).
 
 It might be that ReasonML isn't a great fit for React and GraphQL applications, in which case I just picked the wrong tool for the job.
@@ -110,14 +109,13 @@ I've been contemplating just using something like [RxDB](https://rxdb.info/) and
 
 Setting compatibility issues aside, there just aren't that many published ReasonML bindings or libraries.
 The ReasonML community promotes writing bindings for just the parts of a library that you need, since it has pretty good JS interop.
-Unfortunately, that means there's a dearth of good bindings to look at as an example and I found the documentation a bit too high-level to be entirely practical.
+Sadly, that means there's a dearth of good bindings to look at as an example and I found the documentation a bit too high-level to be entirely practical.
 BuckleScript's interop facilities are certainly rich, but if you mess something up, it can be incredibly obtuse to work out.
 It's also evolved a lot over several major releases, so any examples you do find may well be out of date.
 I think I have a pretty good handle on it, but it was a lot of effort to get to that point, and I don't think it would have been possible at all without help from others on Discord.
 
 Moreover, what bindings or libraries do exist often lack a changelog or tagged releases.
 That makes it hard to tell what's changed between releases.
-Several projects adopted both when prompted, so I think that's a fixable problem, but many have not.
 It's a problem from the top down, as ReasonML [hasn't tagged a release since 2017](https://github.com/facebook/reason/issues/2461).
 It leads to this situation where you need to be "in the know" to figure out what's changing where and when.
 Or, just blindly upgrade, which can lead to the aforementioned compatibility problems.
@@ -133,19 +131,22 @@ The reality is, if I just used TypeScript I could get on with writing the applic
 
 Since the bindings take a long time to write and easily fall out of date, the community recommendation is to only map what you need.
 But, then you don't get any of the wonderful IDE support that you'd have with TypeScript, such as API discovery and full auto-complete.
-You'd also have to keep the TypeScript definitions around so you can consult them ever time you want to see the full API.
+You'd also have to keep the TypeScript definitions around so you can consult them every time you want to see the full API.
 It's awkward and hard to view as anything other than a waste of time.
 
 There have been a few aborted attempts at automating the conversion of TypeScript to ReasonML definitions.
 For simple type definitions they should map straightforwardly.
-Having looked into it a bit myself, I think one of the biggest problems is you can't inherit or mix in record definitions in ReasonML.
-I think it might be interesting if BuckleScript had a `@mix-in` or `@include` annotation that would allow for nested access from ReasonML that would wrap to a flattened property list in JavaScript.
+Having looked into it a bit myself, I believe one of the biggest problems is you can't inherit or mix in record definitions in ReasonML, so things like inherited interfaces can't be mapped easily (or well).
+It might be interesting if BuckleScript had a `@mix-in` or `@include` annotation that could be applied to record fields that are of type record.
+Then from ReasonML you could use nested field access like normal, but BuckleScript could then map that back to a flattened property list in JavaScript.
 
-Without such a tool, I think ReasonML will always remain a niche technology.
+Without a tool to convert TypeScript definitions to BuckleScript, I think ReasonML will always remain a niche technology.
 Building up your own types works wonderfully when building up an internal API.
-But, modern web apps pull in many modules and having to providing bindings for each is overwhelming.
-The secondary recommendation is to use a hybrid application, where part is written in ReasonML and part written in JavaScript/Flow/TypeScript.
-Personally, at that point I'd dump ReasonML in order to keep the project simple.
+But, modern web apps pull in many modules and having to write bindings for each is overwhelming.
+
+Another community recommendation is to use a hybrid application, where part is written in ReasonML and part written in JavaScript/Flow/TypeScript.
+While that would solve the complex type mapping problem, it comes at the cost of a more complicated project structure.
+Personally, at that point I'd find it hard to justify using ReasonML if I already need to maintain a parallel TypeScript project.
 
 
 ### Standards
@@ -189,15 +190,16 @@ People give my previous employer (Oracle) a lot of flack, but if you have a ques
 Facebook seems to do a lot of work internally, quietly, and maybe eventually releases it.
 The other problem I have is Facebook takes "opinionated" to a level I haven't really seen elsewhere.
 Each of their projects I've tried makes design decisions for Facebook's unique use cases and doesn't make that configurable, instead trying to pass them off as best practices.
-If you're working on large polyglot teams focusing on real-time newsfeed-like products, then their decisions make a lot of sense.
-If like most of us, you don't, you just have to learn to adapt to them, which isn't terribly fun for me.
+If you work on large polyglot teams focusing on real-time newsfeed-like products, then their decisions make a lot of sense.
+If like most of us, you don't, you just have to learn to adapt to those design decisions.
+I believe tools should adapt to the needs of the user, not the other way around.
 
 That's to say nothing of their contributor license agreement (CLA) requirement.
 I don't have an inherent problem with CLAs.
 I've signed a few over the years, mostly for open source organizations (Apache Software Foundation and Software Freedom Conservancy, for Selenium).
 I've signed one with Oracle to contribute to GraalVM.
 I can't say if I've just had a change of heart on them or if the [phrasing of the Facebook one](https://code.facebook.com/cla/individual) is problematic, but this was the first time I felt the language was dense enough to warrant hiring a lawyer.
-I don't feel like paying the fees for a lawyer in order to contribute documentation fixes for a project I'm working on on the side with no commercial value.
+I have no interest in paying the fees for a lawyer in order to contribute documentation fixes for a project I'm working on on the side with no commercial value.
 So, this is a situation where being open source doesn't really gain me much.
 
 <a name="summary">Summary</a>
@@ -212,9 +214,9 @@ At the language level, you get a much richer type system than TypeScript's.
 Type-safe GraphQL queries and pattern matching over values makes for a very pleasent programming environment.
 
 However, I've found myself simply unmotivated to work on my side project.
-I poke at it every couple weeks for a couple hours and I invariably end up side-tracked dealing with a library compatibility issue.
-While I could just stick with the set of libraries I was using six months ago and make progress with that, it's also a bit disheartening because recent BuckleScript versions have really improved the JavaScript interop and I hate giving those up.
-Additionally, even when things work, I find I spend a lot of time manually translating TypeScript types to ReasonML types.
+I poke at it every couple weeks for a few hours and I invariably end up side-tracked dealing with a library compatibility issue.
+While I could just stick with the set of libraries I was using six months ago and make progress with that, it's also a bit disheartening because recent BuckleScript versions have really improved the JavaScript interop and I'd hate to give those improvements up.
+Then, even when things work, I find I spend a lot of time manually translating TypeScript types to ReasonML types.
 
 I think the core problem is ReasonML is in a state right now where if you can't afford to keep up with everything going on in the ecosystem, you're going to run into confusing problems.
 The community is great and will take the time to explain what the situation is, but I shouldn't have to be active on a Discord server in order to get anything done.
@@ -231,7 +233,7 @@ Given Facebook's internal usage of ReasonML, I naïvely thought it would be at t
 But, it feels a lot more like it's still in the innovator stage.
 That's okay.
 Every project needs to start somewhere.
-If you're comfortable with that, you can have a lot of fun working withe ReasonML and helping advance the language.
+If you're comfortable with that, you can have a lot of fun working with ReasonML and helping advance the language.
 If you're just looking to tinker with something, even knowing there'll be some bumps, you'll probably want to use something a bit more refined.
 
 <hr/>
