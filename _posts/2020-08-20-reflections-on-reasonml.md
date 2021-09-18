@@ -4,6 +4,7 @@ title: Reflections on ReasonML
 author: Kevin Menard
 date: 2020-08-20 08:59 -0400
 ---
+
 Introduction
 ------------
 
