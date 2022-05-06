@@ -264,9 +264,11 @@ Since the Native Image builder will perform optimizations when building its bina
 ---------------------------------------------------------------------------------------------
 Benchmark                                                   Time             CPU   Iterations
 ---------------------------------------------------------------------------------------------
-C++                                                      50.8 ns         50.7 ns     13773699
+C++                                                      51.1 ns         51.0 ns    822699656
+C++_cv                                                   0.10 %          0.11 %             3
 ```
 <div class="caption"><caption>Figure 1: Benchmark baseline number.</caption></div>
+
 
 ##### Native Image C API
 
@@ -297,18 +299,114 @@ I went with this short-cut as a matter of practicality: 1) I wanted to see what 
 
 The results of the two simple `@CEntryPoint` methods &mdash; numbers 1 and 2 from the previous section's benchmark description &mdash; are available in Fig. 2.
 
-```
----------------------------------------------------------------------------------------------
-Benchmark                                                   Time             CPU   Iterations
----------------------------------------------------------------------------------------------
-C++                                                      50.8 ns         50.7 ns     13773699
+<div id="figure_2_report" class="figure" style="width: 100%"></div>
+<script>{
+  const report_data = {
+    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+    "description": "Performance relative to C++",
+    "data": {
+      "values": [
+        {
+          "name": "C++",
+          "value": 51.04088737376758,
+          "rounded_value": 51.0,
+          "time_unit": "ns",
+          "error": 0.054249524184081375,
+          "rounded_error": 0.05
+        },
+        {
+          "name": "@CEntryPoint: Java",
+          "value": 114.56076473060568,
+          "rounded_value": 114.6,
+          "time_unit": "ns",
+          "error": 1.556988203857994,
+          "rounded_error": 1.56
+        },
+        {
+          "name": "@CEntryPoint: Ruby",
+          "value": 117.17125988361313,
+          "rounded_value": 117.2,
+          "time_unit": "ns",
+          "error": 1.1523951658615907,
+          "rounded_error": 1.15
+        }
+      ]
+    },
+    "transform": [
+      {
+        "calculate": "datum.value / 51.04088737376758",
+        "as": "relativePerformance"
+      }
+    ],
+    "encoding": {
+      "x": {
+        "field": "name",
+        "type": "nominal",
+        "title": "Haversine Implementation",
+        "sort": null,
+        "axis": {
+          "labelAngle": -45,
+          "labelFontSize": 11,
+          "labelLimit": 300,
+          "titlePadding": 10,
+          "titleFontSize": 13
+        }
+      },
+      "y": {
+        "field": "relativePerformance",
+        "type": "quantitative",
+        "title": [
+          "Performance relative to C++",
+          "(Lower is Better)"
+        ],
+        "axis": {
+          "labelFontSize": 11,
+          "titlePadding": 10,
+          "titleFontSize": 13
+        }
+      }
+    },
+    "layer": [
+      {
+        "mark": {
+          "type": "bar",
+          "cornerRadiusTopLeft": 4,
+          "cornerRadiusTopRight": 4,
+          "color": {
+            "expr": "datum.name == 'C++' ? 'coral' : indexof(datum.name, 'Ruby') > 0 ? 'darkred' : 'steelblue'"
+          },
+          "tooltip": {
+            "expr": "datum.rounded_value + \" \" + datum.time_unit + \" ± \" + datum.rounded_error + \"%\""
+          },
+          "width": 50
+        }
+      },
+      {
+        "mark": {
+          "type": "text",
+          "align": "center",
+          "dy": -5
+        },
+        "encoding": {
+          "text": {
+            "field": "relativePerformance",
+            "type": "nominal",
+            "format": ".3",
+            "title": "Execution Time (ns)"
+          }
+        }
+      }
+    ],
+    "width": "container",
+    "config": {
+      "customFormatTypes": true
+    }
+  };
 
-# Benchmark 1
-@CEntryPoint: Java                                        120 ns          120 ns      5795027
+  vegaEmbed('#figure_2_report', report_data);
+}
+</script>
 
-# Benchmark 2
-@CEntryPoint: Ruby                                        155 ns          155 ns      3312553
-```
 <div class="caption"><caption>Figure 2: Benchmark results for methods exposed via @CEntryPoint (Native Image C API).</caption></div>
 
 The Java Haversine implementation executes in 120 ns, compared to the 51 ns of the C++ implementation, taking 2.4x times as long to execute.
@@ -334,32 +432,148 @@ To help give a better sense of the benefits of Truffle caching, multiple results
   <li>Truffle context re-used and evaluated code fragments parsed (thread-unsafe)</li>
 </ol>
 
-```
----------------------------------------------------------------------------------------------
-Benchmark                                                   Time             CPU   Iterations
----------------------------------------------------------------------------------------------
-# Benchmark 1
-@CEntryPoint: Java                                        120 ns          120 ns      5795027
+<div id="figure_3_report" class="figure" style="width: 100%"></div>
+<script>{
+  const report_data = {
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "description": "Performance relative to Java",
+  "data": {
+    "values": [
+      {
+        "group": "@CEntryPoint",
+        "simple_name": "Polyglot (JS)",
+        "variation": "No Parse Cache",
+        "name": "@CEntryPoint: Polyglot (JS) - No Parse Cache",
+        "value": 3024.617444035886,
+        "rounded_value": 3024.6,
+        "time_unit": "ns",
+        "error": 37.96810652676648,
+        "rounded_error": 37.97
+      },
+      {
+        "group": "@CEntryPoint",
+        "simple_name": "Polyglot (Ruby)",
+        "variation": "No Parse Cache",
+        "name": "@CEntryPoint: Polyglot (Ruby) - No Parse Cache",
+        "value": 2288.7013939661983,
+        "rounded_value": 2288.7,
+        "time_unit": "ns",
+        "error": 16.093167409764067,
+        "rounded_error": 16.09
+      },
+      {
+        "group": "@CEntryPoint",
+        "simple_name": "Polyglot (JS)",
+        "variation": "Safe Parse Cache",
+        "name": "@CEntryPoint: Polyglot (JS) - Safe Parse Cache",
+        "value": 1613.384503270058,
+        "rounded_value": 1613.4,
+        "time_unit": "ns",
+        "error": 135.00741551454834,
+        "rounded_error": 135.01
+      },
+      {
+        "group": "@CEntryPoint",
+        "simple_name": "Polyglot (Ruby)",
+        "variation": "Safe Parse Cache",
+        "name": "@CEntryPoint: Polyglot (Ruby) - Safe Parse Cache",
+        "value": 1367.2829181917243,
+        "rounded_value": 1367.3,
+        "time_unit": "ns",
+        "error": 21.29638300062416,
+        "rounded_error": 21.3
+      },
+      {
+        "group": "@CEntryPoint",
+        "simple_name": "Polyglot (JS)",
+        "variation": "Unsafe Parse Cache",
+        "name": "@CEntryPoint: Polyglot (JS) - Unsafe Parse Cache",
+        "value": 941.472393728363,
+        "rounded_value": 941.5,
+        "time_unit": "ns",
+        "error": 4.082922372161627,
+        "rounded_error": 4.08
+      },
+      {
+        "group": "@CEntryPoint",
+        "simple_name": "Polyglot (Ruby)",
+        "variation": "Unsafe Parse Cache",
+        "name": "@CEntryPoint: Polyglot (Ruby) - Unsafe Parse Cache",
+        "value": 857.6401033824295,
+        "rounded_value": 857.6,
+        "time_unit": "ns",
+        "error": 22.996652484327118,
+        "rounded_error": 23.0
+      }
+    ]
+  },
+  "encoding": {
+    "x": {
+      "field": "simple_name",
+      "type": "nominal",
+      "title": "Haversine Implementation",
+      "sort": null,
+      "axis": {
+        "labelAngle": -45,
+        "labelFontSize": 11,
+        "labelLimit": 300,
+        "titlePadding": 10,
+        "titleFontSize": 13
+      }
+    },
+    "xOffset": {
+      "field": "variation"
+    },
+    "y": {
+      "field": "value",
+      "type": "quantitative",
+      "title": [
+        "Mean Execution Time (ns)",
+        "(Lower is Better)"
+      ],
+      "axis": {
+        "labelFontSize": 11,
+        "titlePadding": 10,
+        "titleFontSize": 13
+      }
+    },
+    "color": {
+      "field": "variation"
+    }
+  },
+  "layer": [
+    {
+      "mark": {
+        "type": "bar",
+        "cornerRadiusTopLeft": 4,
+        "cornerRadiusTopRight": 4,
+        "tooltip": {
+          "expr": "datum.rounded_value + \" ± \" + datum.rounded_error + \" \" + datum.time_unit"
+        }
+      }
+    },
+    {
+      "mark": {
+        "type": "text",
+        "align": "center",
+        "dy": -5
+      },
+      "encoding": {
+        "text": {
+          "field": "rounded_value",
+          "type": "nominal",
+          "title": "Execution Time (ns)"
+        }
+      }
+    }
+  ],
+  "width": "container"
+};
 
-# Benchmark 2
-@CEntryPoint: Ruby                                        155 ns          155 ns      3312553
+  vegaEmbed('#figure_3_report', report_data);
+}
+</script>
 
-# Benchmark 3a
-@CEntryPoint: Polyglot (JS)                           1351136 ns      1350841 ns          473
-@CEntryPoint: Polyglot (Ruby)                        70609504 ns     70523737 ns           10
-
-# Benchmark 3b
-@CEntryPoint: Polyglot (JS) - No Parse Cache             4058 ns         4055 ns       125009
-@CEntryPoint: Polyglot (Ruby) - No Parse Cache           3461 ns         3458 ns       163807
-
-# Benchmark 3c
-@CEntryPoint: Polyglot (JS) - Safe Parse Cache           2144 ns         2142 ns       300847
-@CEntryPoint: Polyglot (Ruby) - Safe Parse Cache         1926 ns         1926 ns       326447
-
-# Benchmark 3d
-@CEntryPoint: Polyglot (JS) - Unsafe Parse Cache         1497 ns         1496 ns       392821
-@CEntryPoint: Polyglot (Ruby) - Unsafe Parse Cache       1339 ns         1338 ns       429389
-```
 <div class="caption"><caption>Figure 3: Benchmark results for Truffle polyglot methods exposed via @CEntryPoint (Native Image C API).</caption></div>
 
 The case where the Ruby code can be parsed ahead of time (benchmark _2_) is not quite as fast Java, but probably much closer than people would think, taking 1.3x as long to execute.
@@ -397,18 +611,111 @@ The goal isn't necessarily to measure the call overhead, which would be better a
 
 The results of the two simple JNI methods &mdash; numbers 1 and 2 from the previous section's benchmark description &mdash; are available in Fig. 4.
 
-```
----------------------------------------------------------------------------------------------
-Benchmark                                                   Time             CPU   Iterations
----------------------------------------------------------------------------------------------
-C++                                                      50.8 ns         50.7 ns     13773699
+<div id="figure_4_report" class="figure" style="width: 100%"></div>
+<script>{
+  const report_data = {
+    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+    "description": "Performance relative to Java",
+    "data": {
+      "values": [
+        {
+          "name": "C++",
+          "value": 51.04088737376758,
+          "rounded_value": 51.0,
+          "time_unit": "ns",
+          "error": 0.054249524184081375,
+          "rounded_error": 0.05
+        },
+        {
+          "name": "JNI: Java",
+          "value": 130.3617147079535,
+          "rounded_value": 130.4,
+          "time_unit": "ns",
+          "error": 0.3672427242629517,
+          "rounded_error": 0.37
+        },
+        {
+          "name": "JNI: Ruby",
+          "value": 128.17134813563956,
+          "rounded_value": 128.2,
+          "time_unit": "ns",
+          "error": 0.7904849051992273,
+          "rounded_error": 0.79
+        }
+      ]
+    },
+    "transform": [
+      {
+        "calculate": "datum.value / 51.04088737376758",
+        "as": "relativePerformance"
+      }
+    ],
+    "encoding": {
+      "x": {
+        "field": "name",
+        "type": "nominal",
+        "title": "Haversine Implementation",
+        "sort": null,
+        "axis": {
+          "labelAngle": -45,
+          "labelFontSize": 11,
+          "labelLimit": 300,
+          "titlePadding": 10,
+          "titleFontSize": 13
+        }
+      },
+      "y": {
+        "field": "relativePerformance",
+        "type": "quantitative",
+        "title": [
+          "Performance relative to C++",
+          "(Lower is Better)"
+        ],
+        "axis": {
+          "labelFontSize": 11,
+          "titlePadding": 10,
+          "titleFontSize": 13
+        }
+      }
+    },
+    "layer": [
+      {
+        "mark": {
+          "type": "bar",
+          "cornerRadiusTopLeft": 4,
+          "cornerRadiusTopRight": 4,
+          "color": {
+            "expr": "datum.name == 'C++' ? 'coral' : indexof(datum.name, 'Ruby') > 0 ? 'darkred' : 'steelblue'"
+          },
+          "tooltip": {
+            "expr": "datum.rounded_value + \" \" + datum.time_unit + \" ± \" + datum.rounded_error + \"%\""
+          },
+          "width": 50
+        }
+      },
+      {
+        "mark": {
+          "type": "text",
+          "align": "center",
+          "dy": -5
+        },
+        "encoding": {
+          "text": {
+            "field": "relativePerformance",
+            "type": "nominal",
+            "format": ".3",
+            "title": "Execution Time (ns)"
+          }
+        }
+      }
+    ],
+    "width": "container"
+  };
 
-# Benchmark 1
-JNI: Java                                                 136 ns          136 ns      4961384
+  vegaEmbed('#figure_4_report', report_data);
+}
+</script>
 
-# Benchmark 2
-JNI: Ruby                                                 155 ns          155 ns      3244096
-```
 <div class="caption"><caption>Figure 4: Benchmark results for methods exposed invoked via JNI Invocation API.</caption></div>
 
 As with the Native Image C API results, we start by looking at the performance the Java implementation of the Haversine distance algorithm.
@@ -421,22 +728,127 @@ Having established the performance difference between the C++ Haversine implemen
 Ultimately, I'm interested in embedding Truffle languages into another process.
 While the C++ implementation helps establish an ideal performance target, I plan on using Native Image so and so seeing performance of Truffle languages relative to Java, with everything compiled in the Native Image binary, is a more useful comparison.
 
-```
----------------------------------------------------------------------------------------------
-Benchmark                                                   Time             CPU   Iterations
----------------------------------------------------------------------------------------------
-C++                                                      50.8 ns         50.7 ns     13773699
+<div id="figure_5_report" class="figure" style="width: 100%"></div>
+<script>{
+  const report_data = {
+    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+    "description": "Performance relative to Java",
+    "data": {
+      "values": [
+        {
+          "classification": "JNI",
+          "simple_name": "Java",
+          "name": "JNI: Java",
+          "value": 130.3617147079535,
+          "rounded_value": 130.4,
+          "time_unit": "ns",
+          "error": 0.3672427242629517,
+          "rounded_error": 0.37
+        },
+        {
+          "classification": "JNI",
+          "simple_name": "Ruby",
+          "name": "JNI: Ruby",
+          "value": 128.17134813563956,
+          "rounded_value": 128.2,
+          "time_unit": "ns",
+          "error": 0.7904849051992273,
+          "rounded_error": 0.79
+        },
+        {
+          "classification": "JNI",
+          "simple_name": "Polyglot (JS)",
+          "name": "JNI: Polyglot (JS)",
+          "value": 943.8988927162053,
+          "rounded_value": 943.9,
+          "time_unit": "ns",
+          "error": 42.427902635590264,
+          "rounded_error": 42.43
+        },
+        {
+          "classification": "JNI",
+          "simple_name": "Polyglot (Ruby)",
+          "name": "JNI: Polyglot (Ruby)",
+          "value": 670.0573964137641,
+          "rounded_value": 670.1,
+          "time_unit": "ns",
+          "error": 33.62819017333239,
+          "rounded_error": 33.63
+        }
+      ]
+    },
+    "transform": [
+      {
+        "calculate": "datum.value / 130.3617147079535",
+        "as": "relativePerformance"
+      }
+    ],
+    "encoding": {
+      "x": {
+        "field": "name",
+        "type": "nominal",
+        "title": "Haversine Implementation",
+        "sort": null,
+        "axis": {
+          "labelAngle": -45,
+          "labelFontSize": 11,
+          "labelLimit": 300,
+          "titlePadding": 10,
+          "titleFontSize": 13
+        }
+      },
+      "y": {
+        "field": "relativePerformance",
+        "type": "quantitative",
+        "title": [
+          "Performance relative to JNI: Java",
+          "(Lower is Better)"
+        ],
+        "axis": {
+          "labelFontSize": 11,
+          "titlePadding": 10,
+          "titleFontSize": 13
+        }
+      }
+    },
+    "layer": [
+      {
+        "mark": {
+          "type": "bar",
+          "cornerRadiusTopLeft": 4,
+          "cornerRadiusTopRight": 4,
+          "color": {
+            "expr": "datum.name == 'JNI: Java' ? 'coral' : indexof(datum.name, 'Ruby') > 0 ? 'darkred' : 'steelblue'"
+          },
+          "tooltip": {
+            "expr": "datum.rounded_value + \" \" + datum.time_unit + \" ± \" + datum.rounded_error + \"%\""
+          },
+          "width": 50
+        }
+      },
+      {
+        "mark": {
+          "type": "text",
+          "align": "center",
+          "dy": -5
+        },
+        "encoding": {
+          "text": {
+            "field": "relativePerformance",
+            "type": "nominal",
+            "format": ".3",
+            "title": "Execution Time (ns)"
+          }
+        }
+      }
+    ],
+    "width": "container"
+  };
 
-# Benchmark 1
-JNI: Java                                                 136 ns          136 ns      4961384
+  vegaEmbed('#figure_5_report', report_data);
+}
+</script>
 
-# Benchmark 2
-JNI: Ruby                                                 155 ns          155 ns      3244096
-
-# Benchmark 3
-JNI: Polyglot (JS)                                        548 ns          548 ns      1268457
-JNI: Polyglot (Ruby)                                      311 ns          311 ns      2091522
-```
 <div class="caption"><caption>Figure 5: Benchmark results for Truffle polyglot methods invoked via JNI Invocation API.</caption></div>
 
 As with the `@CEntryPoint` approach, the case where the Ruby code can be parsed and snapshotted into the Native Image binary (benchmark _2_) is nearly as fast (1.1x) as the Java implementation.
@@ -451,26 +863,162 @@ There are two primary invocation APIs for exposing Java methods and making them 
 Thus far we've looked at the relative performance difference of executing methods written in C++, Java, Ruby, and JavaScript in each of these invocation APIs.
 In Fig. 6, we can now see how the invocation APIs perform relative to each other.
 
-```
----------------------------------------------------------------------------------------------
-Benchmark                                                   Time             CPU   Iterations
----------------------------------------------------------------------------------------------
-C++                                                      50.8 ns         50.7 ns     13773699
+<div id="figure_6_report" class="figure" style="width: 100%"></div>
+<script>{
+  const report_data = {
+    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+    "description": "@CEntryPoint vs JNI",
+    "data": {
+      "values": [
+        {
+          "classification": "@CEntryPoint",
+          "simple_name": "Java",
+          "name": "@CEntryPoint: Java",
+          "value": 114.56076473060568,
+          "rounded_value": 114.6,
+          "time_unit": "ns",
+          "error": 1.556988203857994,
+          "rounded_error": 1.56
+        },
+        {
+          "classification": "@CEntryPoint",
+          "simple_name": "Ruby",
+          "name": "@CEntryPoint: Ruby",
+          "value": 117.17125988361313,
+          "rounded_value": 117.2,
+          "time_unit": "ns",
+          "error": 1.1523951658615907,
+          "rounded_error": 1.15
+        },
+        {
+          "classification": "@CEntryPoint",
+          "simple_name": "Polyglot (JS)",
+          "name": "@CEntryPoint: Polyglot (JS) - Safe Parse Cache",
+          "value": 1613.384503270058,
+          "rounded_value": 1613.4,
+          "time_unit": "ns",
+          "error": 135.00741551454834,
+          "rounded_error": 135.01
+        },
+        {
+          "classification": "@CEntryPoint",
+          "simple_name": "Polyglot (Ruby)",
+          "name": "@CEntryPoint: Polyglot (Ruby) - Safe Parse Cache",
+          "value": 1367.2829181917243,
+          "rounded_value": 1367.3,
+          "time_unit": "ns",
+          "error": 21.29638300062416,
+          "rounded_error": 21.3
+        },
+        {
+          "classification": "JNI",
+          "simple_name": "Java",
+          "name": "JNI: Java",
+          "value": 130.3617147079535,
+          "rounded_value": 130.4,
+          "time_unit": "ns",
+          "error": 0.3672427242629517,
+          "rounded_error": 0.37
+        },
+        {
+          "classification": "JNI",
+          "simple_name": "Ruby",
+          "name": "JNI: Ruby",
+          "value": 128.17134813563956,
+          "rounded_value": 128.2,
+          "time_unit": "ns",
+          "error": 0.7904849051992273,
+          "rounded_error": 0.79
+        },
+        {
+          "classification": "JNI",
+          "simple_name": "Polyglot (Ruby)",
+          "name": "JNI: Polyglot (Ruby)",
+          "value": 670.0573964137641,
+          "rounded_value": 670.1,
+          "time_unit": "ns",
+          "error": 33.62819017333239,
+          "rounded_error": 33.63
+        },
+        {
+          "classification": "JNI",
+          "simple_name": "Polyglot (JS)",
+          "name": "JNI: Polyglot (JS)",
+          "value": 943.8988927162053,
+          "rounded_value": 943.9,
+          "time_unit": "ns",
+          "error": 42.427902635590264,
+          "rounded_error": 42.43
+        }
+      ]
+    },
+    "encoding": {
+      "x": {
+        "field": "simple_name",
+        "type": "nominal",
+        "title": "Haversine Implementation",
+        "sort": null,
+        "axis": {
+          "labelAngle": -45,
+          "labelFontSize": 11,
+          "labelLimit": 300,
+          "titlePadding": 10,
+          "titleFontSize": 13
+        }
+      },
+      "xOffset": {
+        "field": "classification"
+      },
+      "y": {
+        "field": "value",
+        "type": "quantitative",
+        "title": [
+          "Mean Execution Time (ns)",
+          "(Lower is Better)"
+        ],
+        "axis": {
+          "labelFontSize": 11,
+          "titlePadding": 10,
+          "titleFontSize": 13
+        }
+      },
+      "color": {
+        "field": "classification"
+      }
+    },
+    "layer": [
+      {
+        "mark": {
+          "type": "bar",
+          "cornerRadiusTopLeft": 4,
+          "cornerRadiusTopRight": 4,
+          "tooltip": {
+            "expr": "datum.rounded_value + \" ± \" + datum.rounded_error + \" \" + datum.time_unit"
+          }
+        }
+      },
+      {
+        "mark": {
+          "type": "text",
+          "align": "center",
+          "dy": -5
+        },
+        "encoding": {
+          "text": {
+            "field": "rounded_value",
+            "type": "nominal",
+            "title": "Execution Time (ns)"
+          }
+        }
+      }
+    ],
+    "width": "container"
+  };
 
-# Benchmark 1
-@CEntryPoint: Java                                        120 ns          120 ns      5795027
-JNI: Java                                                 136 ns          136 ns      4961384
+  vegaEmbed('#figure_6_report', report_data);
+}
+</script>
 
-# Benchmark 2
-@CEntryPoint: Ruby                                        155 ns          155 ns      3312553
-JNI: Ruby                                                 155 ns          155 ns      3244096
-
-# Benchmark 3
-@CEntryPoint: Polyglot (JS) - Safe Parse Cache           2144 ns         2142 ns       300847
-@CEntryPoint: Polyglot (Ruby) - Safe Parse Cache         1926 ns         1926 ns       326447
-JNI: Polyglot (JS)                                        548 ns          548 ns      1268457
-JNI: Polyglot (Ruby)                                      311 ns          311 ns      2091522
-```
 <div class="caption"><caption>Figure 6: Benchmark results for Truffle polyglot methods invoked via both the Native Image C API and the JNI Invocation API.</caption></div>
 
 As I mentioned much earlier in this post, a refrain I've heard repeatedly in the GraalVM community is that the JNI Invocation API is prohibitively slow for calling exposed functions in a Native Image shared library.
