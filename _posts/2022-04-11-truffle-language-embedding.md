@@ -203,17 +203,18 @@ The _jni-native_ profile from the Native Image Playground does precisely that.
 Both the _jni-libjvm-polyglot_ and _jni-native_ Maven profiles from the Native Image Playground use the the same exact C++ code launcher application to calculate the Haversine distance using a Truffle language through its Java polyglot API.
 That's the primary draw of using the JNI Invocation API with Native Image; you don't need to learn a new non-standard API and your code will work without modification as you switch between _libjvm_ and the Native Image shared library.
 
+
 ### Benchmarks
 
 When starting this project, I was only aware of the Native Image C API, so that's what I started with.
 Between documentation, GitHub issues, and discussions with others on the [GraalVM Slack](https://graalvm.slack.com/join/shared_invite), I learned about the JNI support in Native Image.
 But, I was also told that JNI calls would have higher overhead than using the Native Image C API until [Project Panama](https://openjdk.java.net/projects/panama/) is finished.
 This presented a conflict because ultimately I'm investigating ways to embed languages like TruffleRuby into other applications.
-The choice between fast &amp; deprecated (Native Image C API) and slower &amp; but API-stable (JNI Invocation API) is not the sort of trade-off I really wanted to make.
+The choice between fast &amp; deprecated (Native Image C API) and slower but API-stable (JNI Invocation API) is not the sort of trade-off I really wanted to make.
 I haven't been actively tracking Project Panama, but it's not in Java 17 and GraalVM only uses Java LTS releases.
 The next planned LTS release will be Java 21 and that's targeted for Sept. 2023 &mdash; too far out to wait for this application.
 
-While I spoken with people that experienced significant slowdowns in trying to migrate from the Native Image C API to the JNI Invocation API, I couldn't find any numbers supporting the claims.
+While I've spoken with people that experienced significant slowdowns in trying to migrate from the Native Image C API to the JNI Invocation API, I couldn't find any numbers supporting their claims.
 Thus, the final aspect of the Native Image Playground is to benchmark different different options for executing code in Truffle languages embedded in a process.
 Whether using the Native Image C API or the JNI Invocation API, there are several different ways to call into a Truffle language, so the benchmarks include multiple approaches with each of the Native Image shared library APIs.
 
@@ -234,12 +235,15 @@ Since Truffle optimizes and deoptimizes based on values profiled an run-time, ea
 While it's nearly impossible to eliminate system effects (e.g., cache line pollution), each benchmark was run three times in order to help minimize such effects.
 Additionally, to help avoid differences related to benchmark execution order, benchmark results were collected using the `--benchmark_enable_random_interleaving=true` option from the Google Benchmark library.
 
-For each benchmark, I present two values: 1) the best of three execution times; and 2) the coefficient of variation for the three executions.
-The minimum value represents the ideal case where system effects have not adversely impacted performance.
-The coefficient of variation is simply presented to get an idea of how noisy the benchmark measurements were.
-If you'd like to see all of the raw measurements, along with the median, mean, and standard deviation, you can [download the results](https://gist.github.com/nirvdrum/73317cee72d14610dbfbb6b311ea8e31).
+For each benchmark, I present two values: 1) the mean of three execution times; and 2) the standard deviation for the three executions.
+Deciding which value to present is an on-going debate in the world of computer science.
+One theory holds that the minimum value represents the ideal case where system effects have not adversely impacted performance and so that should be used.
+Another is that you can never run with ideal state, so average values like the mean and median represent more realistic cases.
+In this situation, I picked the mean mostly because I also want to present error data and the standard deviation is a simple value to use.
+Even that should be taken with a grain of salt, however, because there's no guarantee the performance follows a normal distribution.
+If you'd like to see all of the raw measurements, along with the median, mean, standard deviation, and coefficient of variation, you can [download the results](https://gist.github.com/nirvdrum/73317cee72d14610dbfbb6b311ea8e31).
 
-Much like the examples used to demonstrate the various ways to embed Truffle languaages, the benchmarks all compute the Haversine distance.
+Much like the examples used to demonstrate the various ways to embed Truffle languages, the benchmarks all compute the Haversine distance.
 There is a Haversine implementation in C++ intended to be something of a control value.
 Likewise, there's an Haversine implementation in Java to establish the baseline for methods compiled by Native Image.
 From there, all of the other benchmarks call into a Truffle language to calculate the Haversine distance.
@@ -247,10 +251,27 @@ From there, all of the other benchmarks call into a Truffle language to calculat
 Software versions:
 
   * C++ Compiler: clang++ (Ubuntu clang version 14.0.0-1ubuntu1)
-  * Google Benchmark: 705202d22a10154ebc8bf0975e94e1a93f08ce98
   * GraalVM: 22.1.0 (based on Java 17.0.3) - Community Edition
+  * [Native Image Playground](https://github.com/nirvdrum/native-image-playground/): ceff9b6e21c6a3d55d426c7c0c2a2cf3c8f7fcbb
+  * [Google Benchmark](https://github.com/google/benchmark): 705202d22a10154ebc8bf0975e94e1a93f08ce98
 
 #### Classifications
+
+The benchmark results are presented in four phases:
+
+  1. Baseline performance
+  2. Native Image C API
+  3. Java Native Interface (JNI) Invocation API
+  4. Native Image C API vs JNI Invocation API
+
+Since I'm using Native Image to build a native binary using Java, I wanted to establish a reasonable upper-bound on performance of the generated code.
+In Phase 1, I present the results of a C-based implementation of the Haversine distance.
+This is a straightforward implementation compiled with `-03` optimizations, but does not make use of profile-guided optimization (PGO), compiler intrinsics, inline ASM, or any other manually-driven optimization.
+
+Having established what Native Image performance would be in an ideal case, Phases 2 & 3 explore performance of the two primary APIs for invoking exposed functions in a Native Image shared library: the Native Image C API and the JNI Invocation API.
+For each API, I benchmark a Java-based implementation of the Haversine distance, establising a new reasonable upper-bound on performance for that API.
+From there, the various ways to execute code within a Truffle interpreter are investigated.
+Phases 2 & 3 explore these different approaches and the best option (\* not necessarily the fastest) are used for the head-to-head comparison in Phase 4.
 
 ##### Baseline
 
@@ -265,10 +286,17 @@ Since the Native Image builder will perform optimizations when building its bina
 Benchmark                                                   Time             CPU   Iterations
 ---------------------------------------------------------------------------------------------
 C++                                                      51.1 ns         51.0 ns    822699656
+C++                                                      51.1 ns         51.1 ns    822699656
+C++                                                      51.0 ns         51.0 ns    822699656
+C++_mean                                                 51.0 ns         51.0 ns            3
+C++_median                                               51.1 ns         51.0 ns            3
+C++_stddev                                              0.053 ns        0.054 ns            3
 C++_cv                                                   0.10 %          0.11 %             3
 ```
 <div class="caption"><caption>Figure 1: Benchmark baseline number.</caption></div>
 
+The tabular output in Fig. 1 is generated by the Google Benchmark framework.
+The execution time is very stable between each of the benchmark runs, with a mean execution time of 51.0 ns.
 
 ##### Native Image C API
 
@@ -276,132 +304,140 @@ There are three types of benchmarks run with the Native Image C API:
 
   1. A pure Java implementation of the Haversine distance
   2. A hard-coded Ruby implementation of Haversine distance
-  3. A generic executor of Truffle language code, which is supplied with implementations of the Haversine distance in Ruby and JavaScript.
+  3. A general executor of Truffle language code, which is supplied with implementations of the Haversine distance in Ruby and JavaScript.
 
 I chose these three to help establish where overhead may lie.
 I expect the pure Java version to optimize the best during AOT compilation; however, it will not JIT compile.
 
 The hard-coded Ruby implementation uses the GraalVM Polyglot API to execute a predetermined code fragment with TruffleRuby.
 The code fragment can be parsed ahead-of-time and the resulting function object stored directly into the Native Image shared library, avoiding the need to parse the code at runtime.
-Since the requirements of tha code fragment are known ahead of time, the implementation can make the exact Truffle polyglot calls needed to execute the Ruby Haversine code.
+Since the requirements of that code fragment are known ahead of time, the implementation can make the exact Truffle polyglot calls needed to execute the Ruby Haversine code.
 While somewhat limited, this example is illustrative of how you might embed a language like Ruby within a process to run specific workloads.
 
-The final benchmark also makes use of the GraalVM Polyglot API, but it accepts arbitrary code fragements.
-Well, in this case, it's not exactly arbitrary.
-The benchmark harness does provide the code fragment to execute and does so for both JavaScript and Ruby implementations of the Haversine distance algorithm.
-However, I took something of a short-cut for the execution of the code.
-The GraalVM Polyglot API types all results as `org.graalvm.polyglot.Value`, but this is not a type that Native Image can work with out-of-the-box in a `@CEntryPoint` method.
-As a simplification, the exposed method always returns `double`.
-Likewise, the four `double` coordinates would need to be packed into an `Object[]` in order to make the execution method truly arbitrary, but our exposed function takes four `double` arguments and passes them through to the Truffle polyglot call.
-I went with this short-cut as a matter of practicality: 1) I wanted to see what the overhead would be of executing essentially the same code, but being evaluated at runtime rather than being baked into the Native Image library; and 2) the effort required to make this approach truly general is so involved that I can't believe anyone would do it in practice.<a href="#footnote_4"><sup>4</sup></a>
+The final benchmark also makes use of the GraalVM Polyglot API, but rather than hard-code the guest code fragments in the image, they are supplied as a string argument by the benchmark.
+As a matter of practicality, however, the exposed library function only works with code fragments that take four `double` arguments and return a `double` value.
+The API call that deals with evaluating the code fragment is unaware of the restriction, however, so the interpreter still must discover the shape of data by runtime profiling.
+
+Ideally, everything about the call would be flexible, but there's a lot of ceremony involved in harmonizing the C and Java type systems using the Native Image C API (JNI does not have this problem).
+Principally, all return values are typed as `org.graalvm.polyglot.Value` in the GraalVM Polyglot API, but the Native Image C API cannot work directly with these objects.
+As a result, the return value needs to be coerced into a native type (in this case, `double`).
+That's fairly straightforward to do when the caller knows the return value should be of a specific type, but it becomes much more complicated when the caller needs to allow any return type.
+Likewise, a truly general API would need to pack the four `double` coordinates into a `java.lang.Object[]` constructed in C/C++.
+While it's all doable, the effort required to make this approach truly general is so involved that I can't believe anyone would do it in practice<a href="#footnote_4"><sup>4</sup></a>.
 
 ###### Results
 
-The results of the two simple `@CEntryPoint` methods &mdash; numbers 1 and 2 from the previous section's benchmark description &mdash; are available in Fig. 2.
+The results of the two simple `@CEntryPoint` methods &mdash; _Benchmark 1 &amp; 2_ from the previous section &mdash; are available in Fig. 2.
 
 <div id="figure_2_report" class="figure" style="width: 100%"></div>
 <script>{
   const report_data = {
-    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-    "description": "Performance relative to C++",
-    "data": {
-      "values": [
-        {
-          "name": "C++",
-          "value": 51.04088737376758,
-          "rounded_value": 51.0,
-          "time_unit": "ns",
-          "error": 0.054249524184081375,
-          "rounded_error": 0.05
-        },
-        {
-          "name": "@CEntryPoint: Java",
-          "value": 114.56076473060568,
-          "rounded_value": 114.6,
-          "time_unit": "ns",
-          "error": 1.556988203857994,
-          "rounded_error": 1.56
-        },
-        {
-          "name": "@CEntryPoint: Ruby",
-          "value": 117.17125988361313,
-          "rounded_value": 117.2,
-          "time_unit": "ns",
-          "error": 1.1523951658615907,
-          "rounded_error": 1.15
-        }
-      ]
-    },
-    "transform": [
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "description": "Performance relative to C++",
+  "data": {
+    "values": [
       {
-        "calculate": "datum.value / 51.04088737376758",
-        "as": "relativePerformance"
-      }
-    ],
-    "encoding": {
-      "x": {
-        "field": "name",
-        "type": "nominal",
-        "title": "Haversine Implementation",
-        "sort": null,
-        "axis": {
-          "labelAngle": -45,
-          "labelFontSize": 11,
-          "labelLimit": 300,
-          "titlePadding": 10,
-          "titleFontSize": 13
-        }
-      },
-      "y": {
-        "field": "relativePerformance",
-        "type": "quantitative",
-        "title": [
-          "Performance relative to C++",
-          "(Lower is Better)"
-        ],
-        "axis": {
-          "labelFontSize": 11,
-          "titlePadding": 10,
-          "titleFontSize": 13
-        }
-      }
-    },
-    "layer": [
-      {
-        "mark": {
-          "type": "bar",
-          "cornerRadiusTopLeft": 4,
-          "cornerRadiusTopRight": 4,
-          "color": {
-            "expr": "datum.name == 'C++' ? 'coral' : indexof(datum.name, 'Ruby') > 0 ? 'darkred' : 'steelblue'"
-          },
-          "tooltip": {
-            "expr": "datum.rounded_value + \" \" + datum.time_unit + \" ± \" + datum.rounded_error + \"%\""
-          },
-          "width": 50
-        }
+        "group": null,
+        "simple_name": null,
+        "variation": null,
+        "name": "C++",
+        "value": 51.04088737376758,
+        "rounded_value": 51.0,
+        "time_unit": "ns",
+        "error": 0.054249524184081375,
+        "rounded_error": 0.05
       },
       {
-        "mark": {
-          "type": "text",
-          "align": "center",
-          "dy": -5
-        },
-        "encoding": {
-          "text": {
-            "field": "relativePerformance",
-            "type": "nominal",
-            "format": ".3",
-            "title": "Execution Time (ns)"
-          }
-        }
+        "group": "@CEntryPoint",
+        "simple_name": "Java",
+        "variation": null,
+        "name": "@CEntryPoint: Java",
+        "value": 114.56076473060568,
+        "rounded_value": 114.6,
+        "time_unit": "ns",
+        "error": 1.556988203857994,
+        "rounded_error": 1.56
+      },
+      {
+        "group": "@CEntryPoint",
+        "simple_name": "Ruby",
+        "variation": null,
+        "name": "@CEntryPoint: Ruby",
+        "value": 117.17125988361313,
+        "rounded_value": 117.2,
+        "time_unit": "ns",
+        "error": 1.1523951658615907,
+        "rounded_error": 1.15
       }
-    ],
-    "width": "container",
-    "config": {
-      "customFormatTypes": true
+    ]
+  },
+  "transform": [
+    {
+      "calculate": "datum.value / 51.04088737376758",
+      "as": "relativePerformance"
     }
-  };
+  ],
+  "encoding": {
+    "x": {
+      "field": "name",
+      "type": "nominal",
+      "title": "Haversine Implementation",
+      "sort": null,
+      "axis": {
+        "labelAngle": -45,
+        "labelFontSize": 11,
+        "labelLimit": 300,
+        "titlePadding": 10,
+        "titleFontSize": 13
+      }
+    },
+    "y": {
+      "field": "relativePerformance",
+      "type": "quantitative",
+      "title": [
+        "Performance relative to C++",
+        "(Lower is Better)"
+      ],
+      "axis": {
+        "labelFontSize": 11,
+        "titlePadding": 10,
+        "titleFontSize": 13
+      }
+    }
+  },
+  "layer": [
+    {
+      "mark": {
+        "type": "bar",
+        "cornerRadiusTopLeft": 4,
+        "cornerRadiusTopRight": 4,
+        "color": {
+          "expr": "datum.name == 'C++' ? 'coral' : indexof(datum.name, 'Ruby') > 0 ? 'darkred' : 'steelblue'"
+        },
+        "tooltip": {
+          "expr": "datum.rounded_value + \" ± \" + datum.rounded_error + \" \" + datum.time_unit"
+        },
+        "width": 50
+      }
+    },
+    {
+      "mark": {
+        "type": "text",
+        "align": "center",
+        "dy": -5
+      },
+      "encoding": {
+        "text": {
+          "field": "relativePerformance",
+          "type": "nominal",
+          "format": ".3",
+          "title": "Execution Time (ns)"
+        }
+      }
+    }
+  ],
+  "width": "container"
+};
 
   vegaEmbed('#figure_2_report', report_data);
 }
@@ -409,7 +445,7 @@ The results of the two simple `@CEntryPoint` methods &mdash; numbers 1 and 2 fro
 
 <div class="caption"><caption>Figure 2: Benchmark results for methods exposed via @CEntryPoint (Native Image C API).</caption></div>
 
-The Java Haversine implementation executes in 120 ns, compared to the 51 ns of the C++ implementation, taking 2.4x times as long to execute.
+The Java Haversine implementation executes in 115 ns, compared to the 51 ns of the C++ implementation, taking 2.25x times as long to execute.
 Interpreting that result requires contextualizing your application.
 On the one hand, if performance is your ultimate goal, the C++ implementation is twice as fast as the Java one compiled with Native Image.
 On the other hand, the Native Image implementation includes a fully functional virtual machine with memory safety, garbage collection, platform API abstraction, and so on.
@@ -418,18 +454,20 @@ Either way, this example is not telling the whole story and results should not b
 There isn't much going on in terms of memory allocation, I/O, multi-threading, or even functionality like virtual calls and templating/generics.
 I'd encourage you to run your own benchmarks flexing the functionality your application would require.
 
-With all of that said, from here on out I'm going to use the Java implementation of the Haversine algorithm as the baseline.
-The differences between Java and Truffle languages are smaller than the differences between C++ and Java and that detail would be difficult to see if the ensuing analysis focused on Truffle languages vs C++.
+From here on out I'm going to use the Java implementation of the Haversine algorithm as the baseline.
+I think this is a more realistic performance target for the Truffle languages.
+Additionally, the differences between Java and Truffle languages are smaller than the differences between C++ and Java and that detail would be difficult to see if the ensuing analysis focused on Truffle languages vs C++.
 
-Fig. 3 adds in the results from the third benchmark outlined in the previous section.
-Results are provided for both TruffleRuby and Graal.js in order to provide GraalVM Polyglot API results that don't overfit to a particular language.
-To help give a better sense of the benefits of Truffle caching, multiple results are presented:
+Before taking a look at the performance of the various Haversine implementations invoked via the Native Image C API, we need to sort out which approach to take for making arbitrary GraalVM Polyglot API calls (see previous section for description).
+Fig. 3 shows the results of executing a guest language code fragment under a variety of Truffle resource management strategies.
+Results are provided for both TruffleRuby and Graal.js in order to provide results that don't overfit to a particular guest language.
+The different strategies measured are:
 
 <ol type="a">
-  <li>No caching at all (try-with-resources pattern; context is local and code fragments always parsed at runtime)</li>
-  <li>Truffle context re-used, but code fragments always parsed at runtime</li>
-  <li>Truffle context re-used and evaluated code fragments parsed (thread-safe)</li>
-  <li>Truffle context re-used and evaluated code fragments parsed (thread-unsafe)</li>
+  <li>Polyglot context reused, but code fragments always parsed at runtime <small>(No Parse Cache)</small></li>
+  <li>Polyglot context reused and evaluated code fragments parsed <small>(Thread-Safe Parse Cache)</small></li>
+  <li>Polyglot context reused and evaluated code fragments parsed <small>(Thread-Unsafe Parse Cache)</small></li>
+  <li>Polyglot context recreated for each call <small>(Not graphed)</small></li>
 </ol>
 
 <div id="figure_3_report" class="figure" style="width: 100%"></div>
@@ -576,77 +614,80 @@ To help give a better sense of the benefits of Truffle caching, multiple results
 
 <div class="caption"><caption>Figure 3: Benchmark results for Truffle polyglot methods exposed via @CEntryPoint (Native Image C API).</caption></div>
 
-The case where the Ruby code can be parsed ahead of time (benchmark _2_) is not quite as fast Java, but probably much closer than people would think, taking 1.3x as long to execute.
-The two `@CEntryPoint` methods that take an arbitrary language and code fragment to execute fare much worse, taking 10.8x as long to execute in the unsafe Ruby version and 15.8x as long in the thread-safe implementation.
-While a fair bit of the 
-For this particular case, the Ruby code is outperforming the JavaScript implementation.
+Benchmarks _3a - 3c_ execute an exposed Native Image library function that takes both a Truffle language identifier and a code fragment to execute.
+These values are supplied at runtime, so there's no ability to parse them ahead-of-time and snapshot them into the image as _Benchmark 2_ could.
 
-Benchmarks _3a_ - _3d_ execute an exposed Native Image function that takes both a Truffle language identifier and a code fragment to execute.
-These values are supplied at runtime, so there's no ability to parse them ahead-of-time and snapshot them into the image as benchmark _2_ could.
-The results for benchmark _3a_ clearly illustrate why re-using a Truffle context is important.
-Without reusing a Truffle context, each Truffle language must bootstrap itself each time a context is used<a href="#footnote_5"><sup>5</sup></a>.
-Ruby has a much larger core library than JavaScript does, so there is a lot more to do to bootstrap the interpreter, leading TruffleRuby to have a per-call execution time that's an order of magnitude slower than Graal.js.
-Moreover, by starting from scratch each time, Graal is never able to JIT the Truffle language code.
+Each of these benchmarks reuse a GraalVM Polyglot context throughout all of their iterations.
+_Benchmark 3a_ parses the Haversine distance code fragment each time the benchmark runs.
+_Benchmark 3b_ uses a thread-safe parse cache, parsing the Haversine distance code fragment once and reusing the resulting Truffle function object for subsequent calls.
+_Benchmark 3c_ does essentially the same things as _3b_, but does away with the overhead of a `ConcurrentHashMap`.
+_Benchmark 3c_ is a horrible way to use the GraalVM Polyglot API and exists only to give us a sense of the overhead of a protected parse cache.
 
-Benchmarks _3b_ - _3d_ all reuse a Truffle context throughout the life of their benchmarks.
-Benchmark _3b_ parses the Haversine distance code fragment each time the benchmark runs.
-Benchmark _3c_ uses a thread-safe parse cache, parsing the Haversine distance code fragment once and reusing the resulting Truffle function object for subsequent calls.
-Benchmark _3d_ does essentially the same things as _3c_, but does away with the overhead of a `ConcurrentHashMap`.
-Of the three, I think the thread-safe parse cache (_3c_) is the one to go with.
-I included results with no parse cache (_3a_) and no thread-safety (_3d_) in order to see what the overhead is for using a thread-safe cache.
-Once the code is bootstrapped and JIT'd, the performance difference between the Ruby and JavaScript closes considerably, with TruffleRuby eking out Graal.js by a small amount.
+Of the three approaches displayed in _Benchmark 3_, I think the thread-safe parse cache (_3b_) is the one to go with.
+It outperforms executing without a parse cache (_3a_) without introducing race conditions that will be very difficult to debug (_3c_).
+This is the value that will be used in Phase 4 where the results of the Native Image C API will be compared to the results of the JNI Invocation API.
 
-
-##### JNI Invocation API
-
-In order to easily compare results between the Native Image C API and the JNI Invocation API, the same workloads were tested with each API.
-With the JNI Invocation API, we have considerably more control over re-using the Graal Isolate, Truffle context, and parsed guest language functions.
-Consequently, the JNI benchmarks do not explore different Truffle caching strategies as we did with the Native Image C API benchmarks; we just use the most straightforward implementation, which happens to be the most performant.
-<!--
-The benchmarks take advantage of the more granular controls afforded to it so we can see the realistic trade-off between the two APIs.
-The goal isn't necessarily to measure the call overhead, which would be better accomplished by using the same parse cache strategy for both APIs.
--->
-
-###### Results
-
-The results of the two simple JNI methods &mdash; numbers 1 and 2 from the previous section's benchmark description &mdash; are available in Fig. 4.
+Having evaluated several GraalVM Polyglot resource management strategies and settling on the thread-safe parse cache with polyglot context reuse, we can now look at the performance of the various Native Image C API calls (see Fig. 4).
+I was happy to see that the hard-coded Ruby implementation (_Benchmark 2_) runs just as fast as the Java implementation (_Benchmark 1_).
+It's a little difficult to see in the graphs, but when accounting for measurement errors, the differences are virtually non-existent: 114.6 ± 1.56 ns for the Java implementation versus 117.2 ± 1.15 ns for the Ruby one.
+If you have a well-defined operation you need to run and that can be baked right into the Native Image binary, you can write your code in a guest language and not have to worry about rewriting parts of it in Java for performance.
 
 <div id="figure_4_report" class="figure" style="width: 100%"></div>
-<script>{
+<script> {
   const report_data = {
     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
     "description": "Performance relative to Java",
     "data": {
       "values": [
         {
-          "name": "C++",
-          "value": 51.04088737376758,
-          "rounded_value": 51.0,
+          "group": "@CEntryPoint",
+          "simple_name": "Java",
+          "variation": null,
+          "name": "@CEntryPoint: Java",
+          "value": 114.56076473060568,
+          "rounded_value": 114.6,
           "time_unit": "ns",
-          "error": 0.054249524184081375,
-          "rounded_error": 0.05
+          "error": 1.556988203857994,
+          "rounded_error": 1.56
         },
         {
-          "name": "JNI: Java",
-          "value": 130.3617147079535,
-          "rounded_value": 130.4,
+          "group": "@CEntryPoint",
+          "simple_name": "Ruby",
+          "variation": null,
+          "name": "@CEntryPoint: Ruby",
+          "value": 117.17125988361313,
+          "rounded_value": 117.2,
           "time_unit": "ns",
-          "error": 0.3672427242629517,
-          "rounded_error": 0.37
+          "error": 1.1523951658615907,
+          "rounded_error": 1.15
         },
         {
-          "name": "JNI: Ruby",
-          "value": 128.17134813563956,
-          "rounded_value": 128.2,
+          "group": "@CEntryPoint",
+          "simple_name": "Polyglot (JS)",
+          "variation": "Safe Parse Cache",
+          "name": "@CEntryPoint: Polyglot (JS) - Safe Parse Cache",
+          "value": 1613.384503270058,
+          "rounded_value": 1613.4,
           "time_unit": "ns",
-          "error": 0.7904849051992273,
-          "rounded_error": 0.79
+          "error": 135.00741551454834,
+          "rounded_error": 135.01
+        },
+        {
+          "group": "@CEntryPoint",
+          "simple_name": "Polyglot (Ruby)",
+          "variation": "Safe Parse Cache",
+          "name": "@CEntryPoint: Polyglot (Ruby) - Safe Parse Cache",
+          "value": 1367.2829181917243,
+          "rounded_value": 1367.3,
+          "time_unit": "ns",
+          "error": 21.29638300062416,
+          "rounded_error": 21.3
         }
       ]
     },
     "transform": [
       {
-        "calculate": "datum.value / 51.04088737376758",
+        "calculate": "datum.value / 114.56076473060568",
         "as": "relativePerformance"
       }
     ],
@@ -668,7 +709,7 @@ The results of the two simple JNI methods &mdash; numbers 1 and 2 from the previ
         "field": "relativePerformance",
         "type": "quantitative",
         "title": [
-          "Performance relative to C++",
+          "Performance relative to @CEntryPoint: Java",
           "(Lower is Better)"
         ],
         "axis": {
@@ -685,10 +726,10 @@ The results of the two simple JNI methods &mdash; numbers 1 and 2 from the previ
           "cornerRadiusTopLeft": 4,
           "cornerRadiusTopRight": 4,
           "color": {
-            "expr": "datum.name == 'C++' ? 'coral' : indexof(datum.name, 'Ruby') > 0 ? 'darkred' : 'steelblue'"
+            "expr": "datum.name == '@CEntryPoint: Java' ? 'coral' : indexof(datum.name, 'Ruby') > 0 ? 'darkred' : 'steelblue'"
           },
           "tooltip": {
-            "expr": "datum.rounded_value + \" \" + datum.time_unit + \" ± \" + datum.rounded_error + \"%\""
+            "expr": "datum.rounded_value + \" ± \" + datum.rounded_error + \" \" + datum.time_unit"
           },
           "width": 50
         }
@@ -715,406 +756,677 @@ The results of the two simple JNI methods &mdash; numbers 1 and 2 from the previ
   vegaEmbed('#figure_4_report', report_data);
 }
 </script>
+<div class="caption"><caption>Figure 4: Benchmark results for Native Image C API calls.</caption></div>
 
-<div class="caption"><caption>Figure 4: Benchmark results for methods exposed invoked via JNI Invocation API.</caption></div>
+Unfortunately, the general use GraalVM Polyglot API calls are much slower than the Java Haversine implementation.
+The polyglot Ruby call takes 12x as long to process as the hard-code Ruby call.
+This isn't isolated to TruffleRuby as the Graal.js calls take 14x as long.
+I haven't spent any time digging into why there's such a large performance gap so I have no concrete suggestions on how to fix it.
 
-As with the Native Image C API results, we start by looking at the performance the Java implementation of the Haversine distance algorithm.
-At 136 ns, the Java implementation takes 2.7x as long to execute as the C++ implementation (51 ns).
-As noted in the Native Image C API benchmark results, there's a natural trade-off between executing the C++ version and Java version, as the latter has a supporting virtual machine.
-It's important to know that there is a performance difference and what that is, but that should be evaluated in context of your functional requirements.
-The Haversine distance algorithm is a computation-heavy benchmark; you should establish your own representative benchmarks if you're trying to decide between a systems language and Native Image for a particular task.
+I will say that using the GraalVM Polyglot API by exposing Java methods with `@CEntryPoint` is quite awkward and probably not the best way to write polyglot code to begin with.
+GraalVM also ships with a library called _libpolyglot_ that exposes a more natural C API for the GraalVM Polyglot API and you can see [an example](https://github.com/nirvdrum/native-image-playground/blob/ceff9b6e21c6a3d55d426c7c0c2a2cf3c8f7fcbb/src/main/c/native-polyglot/native-polyglot.c) of that in the Native Image Playground project.
+I did not benchmark any examples _libpolyglot_.
 
-Having established the performance difference between the C++ Haversine implementation and the Java implementation compiled with Native Image, I'll be using the Java implementation as the baseline for the Truffle benchmarks.
-Ultimately, I'm interested in embedding Truffle languages into another process.
-While the C++ implementation helps establish an ideal performance target, I plan on using Native Image so and so seeing performance of Truffle languages relative to Java, with everything compiled in the Native Image binary, is a more useful comparison.
+Notionally, _libpolyglot_ uses the same machinery as the the Java GraalVM Polyglot API, so I'd expect performance to be quite similar.
+Moreover, it's a big library that includes every Truffle native image you have installed locally (261 MB with TruffleRuby and Graal.js in GraalVM 21.3.0 on Linux) and must be built manually (i.e., you can't install it from the GraalVM component catalog).
+Due to the effort involved and minimal gain anticipated, I opted to defer a deeper analysis of _libpolyglot_ performance as future work.
+
+##### JNI Invocation API
+
+In order to easily compare results between the Native Image C API and the JNI Invocation API, the same workloads were tested with each API.
+As a reminder, those benchmarks are:
+
+  1. A pure Java implementation of the Haversine distance
+  2. A hard-coded Ruby implementation of Haversine distance
+  3. A general executor of Truffle language code, which is supplied with implementations of the Haversine distance in Ruby and JavaScript.
+
+As with the Native Image C API benchmarks, the hard-coded Ruby implementation uses the GraalVM Polyglot API to execute a predetermined code fragment with TruffleRuby.
+That code fragment can be parsed ahead-of-time and the resulting function object stored directly into the Native Image shared library.
+Rather than call an exposed library function, as was needed with the Native Image C API, we can call the representative Java method directly with the JNI Invocation API.
+In this way, the same exact Ruby implementation can be called using two different foreign access APIs.
+
+With the JNI Invocation API, we have considerably more control over reusing the Graal Isolate, GraalVM Polyglot context, and parsed guest language functions.
+Consequently, the JNI benchmarks do not explore different Truffle caching strategies as we did with the Native Image C API benchmarks; we just use the most straightforward implementation, which happens to be the most performant.
+
+###### Results
+
+The results of the two simple JNI methods &mdash; Benchmarks 1 &amp; 2 from the previous section &mdash; are available in Fig. 5.
 
 <div id="figure_5_report" class="figure" style="width: 100%"></div>
 <script>{
   const report_data = {
-    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-    "description": "Performance relative to Java",
-    "data": {
-      "values": [
-        {
-          "classification": "JNI",
-          "simple_name": "Java",
-          "name": "JNI: Java",
-          "value": 130.3617147079535,
-          "rounded_value": 130.4,
-          "time_unit": "ns",
-          "error": 0.3672427242629517,
-          "rounded_error": 0.37
-        },
-        {
-          "classification": "JNI",
-          "simple_name": "Ruby",
-          "name": "JNI: Ruby",
-          "value": 128.17134813563956,
-          "rounded_value": 128.2,
-          "time_unit": "ns",
-          "error": 0.7904849051992273,
-          "rounded_error": 0.79
-        },
-        {
-          "classification": "JNI",
-          "simple_name": "Polyglot (JS)",
-          "name": "JNI: Polyglot (JS)",
-          "value": 943.8988927162053,
-          "rounded_value": 943.9,
-          "time_unit": "ns",
-          "error": 42.427902635590264,
-          "rounded_error": 42.43
-        },
-        {
-          "classification": "JNI",
-          "simple_name": "Polyglot (Ruby)",
-          "name": "JNI: Polyglot (Ruby)",
-          "value": 670.0573964137641,
-          "rounded_value": 670.1,
-          "time_unit": "ns",
-          "error": 33.62819017333239,
-          "rounded_error": 33.63
-        }
-      ]
-    },
-    "transform": [
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "description": "Performance relative to Java",
+  "data": {
+    "values": [
       {
-        "calculate": "datum.value / 130.3617147079535",
-        "as": "relativePerformance"
-      }
-    ],
-    "encoding": {
-      "x": {
-        "field": "name",
-        "type": "nominal",
-        "title": "Haversine Implementation",
-        "sort": null,
-        "axis": {
-          "labelAngle": -45,
-          "labelFontSize": 11,
-          "labelLimit": 300,
-          "titlePadding": 10,
-          "titleFontSize": 13
-        }
-      },
-      "y": {
-        "field": "relativePerformance",
-        "type": "quantitative",
-        "title": [
-          "Performance relative to JNI: Java",
-          "(Lower is Better)"
-        ],
-        "axis": {
-          "labelFontSize": 11,
-          "titlePadding": 10,
-          "titleFontSize": 13
-        }
-      }
-    },
-    "layer": [
-      {
-        "mark": {
-          "type": "bar",
-          "cornerRadiusTopLeft": 4,
-          "cornerRadiusTopRight": 4,
-          "color": {
-            "expr": "datum.name == 'JNI: Java' ? 'coral' : indexof(datum.name, 'Ruby') > 0 ? 'darkred' : 'steelblue'"
-          },
-          "tooltip": {
-            "expr": "datum.rounded_value + \" \" + datum.time_unit + \" ± \" + datum.rounded_error + \"%\""
-          },
-          "width": 50
-        }
+        "group": null,
+        "simple_name": null,
+        "variation": null,
+        "name": "C++",
+        "value": 51.04088737376758,
+        "rounded_value": 51.0,
+        "time_unit": "ns",
+        "error": 0.054249524184081375,
+        "rounded_error": 0.05
       },
       {
-        "mark": {
-          "type": "text",
-          "align": "center",
-          "dy": -5
+        "group": "JNI",
+        "simple_name": "Java",
+        "variation": null,
+        "name": "JNI: Java",
+        "value": 130.3617147079535,
+        "rounded_value": 130.4,
+        "time_unit": "ns",
+        "error": 0.3672427242629517,
+        "rounded_error": 0.37
+      },
+      {
+        "group": "JNI",
+        "simple_name": "Ruby",
+        "variation": null,
+        "name": "JNI: Ruby",
+        "value": 128.17134813563956,
+        "rounded_value": 128.2,
+        "time_unit": "ns",
+        "error": 0.7904849051992273,
+        "rounded_error": 0.79
+      }
+    ]
+  },
+  "transform": [
+    {
+      "calculate": "datum.value / 51.04088737376758",
+      "as": "relativePerformance"
+    }
+  ],
+  "encoding": {
+    "x": {
+      "field": "name",
+      "type": "nominal",
+      "title": "Haversine Implementation",
+      "sort": null,
+      "axis": {
+        "labelAngle": -45,
+        "labelFontSize": 11,
+        "labelLimit": 300,
+        "titlePadding": 10,
+        "titleFontSize": 13
+      }
+    },
+    "y": {
+      "field": "relativePerformance",
+      "type": "quantitative",
+      "title": [
+        "Performance relative to C++",
+        "(Lower is Better)"
+      ],
+      "axis": {
+        "labelFontSize": 11,
+        "titlePadding": 10,
+        "titleFontSize": 13
+      }
+    }
+  },
+  "layer": [
+    {
+      "mark": {
+        "type": "bar",
+        "cornerRadiusTopLeft": 4,
+        "cornerRadiusTopRight": 4,
+        "color": {
+          "expr": "datum.name == 'C++' ? 'coral' : indexof(datum.name, 'Ruby') > 0 ? 'darkred' : 'steelblue'"
         },
-        "encoding": {
-          "text": {
-            "field": "relativePerformance",
-            "type": "nominal",
-            "format": ".3",
-            "title": "Execution Time (ns)"
-          }
+        "tooltip": {
+          "expr": "datum.rounded_value + \" ± \" + datum.rounded_error + \" \" + datum.time_unit"
+        },
+        "width": 50
+      }
+    },
+    {
+      "mark": {
+        "type": "text",
+        "align": "center",
+        "dy": -5
+      },
+      "encoding": {
+        "text": {
+          "field": "relativePerformance",
+          "type": "nominal",
+          "format": ".3",
+          "title": "Execution Time (ns)"
         }
       }
-    ],
-    "width": "container"
-  };
+    }
+  ],
+  "width": "container"
+};
 
   vegaEmbed('#figure_5_report', report_data);
 }
 </script>
 
-<div class="caption"><caption>Figure 5: Benchmark results for Truffle polyglot methods invoked via JNI Invocation API.</caption></div>
+<div class="caption"><caption>Figure 5: Benchmark results for methods exposed invoked via JNI Invocation API.</caption></div>
 
-As with the `@CEntryPoint` approach, the case where the Ruby code can be parsed and snapshotted into the Native Image binary (benchmark _2_) is nearly as fast (1.1x) as the Java implementation.
-The Truffle polyglot calls (benchmark _3_), which take both a Truffle language ID and a code fragment to evaluate at runtime performed, naturally were slower.
-The Truffle polyglot call with the Ruby implementation of the Haversine distance took 2x as long to execute as the version where the Ruby code could be compiled at Native Image build time and 2.3x as long as the Java implementation.
-The JavaScript implementation was considerably slower than the Ruby one when using Truffle polyglot calls.
+As with the Native Image C API results, we start by looking at the performance the Java implementation of the Haversine distance algorithm.
+At a mean value of 130 ns, the Java implementation takes 2.5x as long to execute as the C++ implementation (51 ns).
+As noted in the Native Image C API benchmark results, there's a natural trade-off between executing the C++ version and Java version, as the latter has a supporting virtual machine.
+It's important to know that there is a performance difference and what that is, but that should be evaluated in context of your functional requirements.
+The Haversine distance algorithm is a computation-heavy benchmark; you should establish your own representative benchmarks if you're trying to decide between a systems language and Native Image for a particular task.
 
-##### Overall
-
-The previous sections looked at the performance of different ways to execute code compiled into a Native Image shared library from an external process, with an emphasis on executing code in a Truffle interpreter.
-There are two primary invocation APIs for exposing Java methods and making them accessible via C calling conventions: the Native Image C API and the Java Native Interface Invocation API.
-Thus far we've looked at the relative performance difference of executing methods written in C++, Java, Ruby, and JavaScript in each of these invocation APIs.
-In Fig. 6, we can now see how the invocation APIs perform relative to each other.
+Having established the performance difference between the C++ Haversine implementation and the Java implementation compiled with Native Image, I'll be using the Java implementation as the baseline for the Truffle benchmarks.
+While the C++ implementation helps establish a competitive performance target, ultimately I'm interested in embedding Truffle languages into another process.
+As such, using Java as the baseline is more useful as it highlights where there's room for improvement in Truffle interpreters running in Native Image binaries.
 
 <div id="figure_6_report" class="figure" style="width: 100%"></div>
 <script>{
   const report_data = {
-    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-    "description": "@CEntryPoint vs JNI",
-    "data": {
-      "values": [
-        {
-          "classification": "@CEntryPoint",
-          "simple_name": "Java",
-          "name": "@CEntryPoint: Java",
-          "value": 114.56076473060568,
-          "rounded_value": 114.6,
-          "time_unit": "ns",
-          "error": 1.556988203857994,
-          "rounded_error": 1.56
-        },
-        {
-          "classification": "@CEntryPoint",
-          "simple_name": "Ruby",
-          "name": "@CEntryPoint: Ruby",
-          "value": 117.17125988361313,
-          "rounded_value": 117.2,
-          "time_unit": "ns",
-          "error": 1.1523951658615907,
-          "rounded_error": 1.15
-        },
-        {
-          "classification": "@CEntryPoint",
-          "simple_name": "Polyglot (JS)",
-          "name": "@CEntryPoint: Polyglot (JS) - Safe Parse Cache",
-          "value": 1613.384503270058,
-          "rounded_value": 1613.4,
-          "time_unit": "ns",
-          "error": 135.00741551454834,
-          "rounded_error": 135.01
-        },
-        {
-          "classification": "@CEntryPoint",
-          "simple_name": "Polyglot (Ruby)",
-          "name": "@CEntryPoint: Polyglot (Ruby) - Safe Parse Cache",
-          "value": 1367.2829181917243,
-          "rounded_value": 1367.3,
-          "time_unit": "ns",
-          "error": 21.29638300062416,
-          "rounded_error": 21.3
-        },
-        {
-          "classification": "JNI",
-          "simple_name": "Java",
-          "name": "JNI: Java",
-          "value": 130.3617147079535,
-          "rounded_value": 130.4,
-          "time_unit": "ns",
-          "error": 0.3672427242629517,
-          "rounded_error": 0.37
-        },
-        {
-          "classification": "JNI",
-          "simple_name": "Ruby",
-          "name": "JNI: Ruby",
-          "value": 128.17134813563956,
-          "rounded_value": 128.2,
-          "time_unit": "ns",
-          "error": 0.7904849051992273,
-          "rounded_error": 0.79
-        },
-        {
-          "classification": "JNI",
-          "simple_name": "Polyglot (Ruby)",
-          "name": "JNI: Polyglot (Ruby)",
-          "value": 670.0573964137641,
-          "rounded_value": 670.1,
-          "time_unit": "ns",
-          "error": 33.62819017333239,
-          "rounded_error": 33.63
-        },
-        {
-          "classification": "JNI",
-          "simple_name": "Polyglot (JS)",
-          "name": "JNI: Polyglot (JS)",
-          "value": 943.8988927162053,
-          "rounded_value": 943.9,
-          "time_unit": "ns",
-          "error": 42.427902635590264,
-          "rounded_error": 42.43
-        }
-      ]
-    },
-    "encoding": {
-      "x": {
-        "field": "simple_name",
-        "type": "nominal",
-        "title": "Haversine Implementation",
-        "sort": null,
-        "axis": {
-          "labelAngle": -45,
-          "labelFontSize": 11,
-          "labelLimit": 300,
-          "titlePadding": 10,
-          "titleFontSize": 13
-        }
-      },
-      "xOffset": {
-        "field": "classification"
-      },
-      "y": {
-        "field": "value",
-        "type": "quantitative",
-        "title": [
-          "Mean Execution Time (ns)",
-          "(Lower is Better)"
-        ],
-        "axis": {
-          "labelFontSize": 11,
-          "titlePadding": 10,
-          "titleFontSize": 13
-        }
-      },
-      "color": {
-        "field": "classification"
-      }
-    },
-    "layer": [
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "description": "Performance relative to Java",
+  "data": {
+    "values": [
       {
-        "mark": {
-          "type": "bar",
-          "cornerRadiusTopLeft": 4,
-          "cornerRadiusTopRight": 4,
-          "tooltip": {
-            "expr": "datum.rounded_value + \" ± \" + datum.rounded_error + \" \" + datum.time_unit"
-          }
-        }
+        "group": "JNI",
+        "simple_name": "Java",
+        "variation": null,
+        "name": "JNI: Java",
+        "value": 130.3617147079535,
+        "rounded_value": 130.4,
+        "time_unit": "ns",
+        "error": 0.3672427242629517,
+        "rounded_error": 0.37
       },
       {
-        "mark": {
-          "type": "text",
-          "align": "center",
-          "dy": -5
+        "group": "JNI",
+        "simple_name": "Ruby",
+        "variation": null,
+        "name": "JNI: Ruby",
+        "value": 128.17134813563956,
+        "rounded_value": 128.2,
+        "time_unit": "ns",
+        "error": 0.7904849051992273,
+        "rounded_error": 0.79
+      },
+      {
+        "group": "JNI",
+        "simple_name": "Polyglot (JS)",
+        "variation": null,
+        "name": "JNI: Polyglot (JS)",
+        "value": 943.8988927162053,
+        "rounded_value": 943.9,
+        "time_unit": "ns",
+        "error": 42.427902635590264,
+        "rounded_error": 42.43
+      },
+      {
+        "group": "JNI",
+        "simple_name": "Polyglot (Ruby)",
+        "variation": null,
+        "name": "JNI: Polyglot (Ruby)",
+        "value": 670.0573964137641,
+        "rounded_value": 670.1,
+        "time_unit": "ns",
+        "error": 33.62819017333239,
+        "rounded_error": 33.63
+      }
+    ]
+  },
+  "transform": [
+    {
+      "calculate": "datum.value / 130.3617147079535",
+      "as": "relativePerformance"
+    }
+  ],
+  "encoding": {
+    "x": {
+      "field": "name",
+      "type": "nominal",
+      "title": "Haversine Implementation",
+      "sort": null,
+      "axis": {
+        "labelAngle": -45,
+        "labelFontSize": 11,
+        "labelLimit": 300,
+        "titlePadding": 10,
+        "titleFontSize": 13
+      }
+    },
+    "y": {
+      "field": "relativePerformance",
+      "type": "quantitative",
+      "title": [
+        "Performance relative to JNI: Java",
+        "(Lower is Better)"
+      ],
+      "axis": {
+        "labelFontSize": 11,
+        "titlePadding": 10,
+        "titleFontSize": 13
+      }
+    }
+  },
+  "layer": [
+    {
+      "mark": {
+        "type": "bar",
+        "cornerRadiusTopLeft": 4,
+        "cornerRadiusTopRight": 4,
+        "color": {
+          "expr": "datum.name == 'JNI: Java' ? 'coral' : indexof(datum.name, 'Ruby') > 0 ? 'darkred' : 'steelblue'"
         },
-        "encoding": {
-          "text": {
-            "field": "rounded_value",
-            "type": "nominal",
-            "title": "Execution Time (ns)"
-          }
+        "tooltip": {
+          "expr": "datum.rounded_value + \" ± \" + datum.rounded_error + \" \" + datum.time_unit"
+        },
+        "width": 50
+      }
+    },
+    {
+      "mark": {
+        "type": "text",
+        "align": "center",
+        "dy": -5
+      },
+      "encoding": {
+        "text": {
+          "field": "relativePerformance",
+          "type": "nominal",
+          "format": ".3",
+          "title": "Execution Time (ns)"
         }
       }
-    ],
-    "width": "container"
-  };
+    }
+  ],
+  "width": "container"
+};
 
   vegaEmbed('#figure_6_report', report_data);
 }
 </script>
 
-<div class="caption"><caption>Figure 6: Benchmark results for Truffle polyglot methods invoked via both the Native Image C API and the JNI Invocation API.</caption></div>
+<div class="caption"><caption>Figure 6: Benchmark results for Truffle polyglot methods invoked via JNI Invocation API.</caption></div>
 
-As I mentioned much earlier in this post, a refrain I've heard repeatedly in the GraalVM community is that the JNI Invocation API is prohibitively slow for calling exposed functions in a Native Image shared library.
-I was keen to embed a Truffle language into another process, but which API to use wasn't clear.
-While the JNI Invocation API is the GraalVM team's stated path forward, I also need to solve today's problems with the tooling I have at hand, not some hypothetically better version to come.
+Fig. 6 shows the performance of the JNI polyglot experiments relative to the Java Haversine implementation.
+As with the Native Image C API, the case where the Ruby code can be parsed and snapshotted into the Native Image binary (_Benchmark 2_) is as fast as the Java implementation: 130.4 ± 0.37 ns (Java) versus 128.2 ± 0.79 ns (Ruby).
+My conclusion is the same as before: if you have a well-defined operation you need to run and can bake that right into your Native Image binary, you can write your code in a guest language and not have to worry about rewriting parts of it in Java for performance.
+That's an amazing result to me.
+I suspect most people would expect the Ruby version to run substantially slower than Java and possibly expect the Java version to run substantially slower than C++.
+But, here, with Native Image we can load TruffleRuby into a foreign process and run a math-heavy operation that only takes 2.5x as long as an optimized C++ version.
 
-With that said, the only benchmark where the Native Image C API comes out on top is the one with the Java implementation of the Haversine distance algorithm.
-This benchmark evaluated a computation-heavy method written entirely in Java.
-I did not run this code with the Espresso Truffle implementation of Java, so there was no JIT compilation of the code.
-With this benchmark, we see that there is ~13% overhead in using the JNI Invocation API (take that with a grain of salt: I don't have error bounds for these values, although I did run multiple times and results were fairly consistent).
-Based on what I had been reading, I was expecting a much larger performance difference.
-I'm sure for some applications, > 10% performance hit across the board is untenable.
-And to be fair, that performance gap may be larger with functions that take more arguments or varargs or have non-primitive parameters or any of the variations in making a foreign call that are *not* benchmarked here.
+The GraalVM polyglot calls that take both a Truffle language ID and a code fragment to evaluate at runtime (_Benchmark 3_) were a fair bit slower.
+Calling Ruby in this way took 5x as long to execute as the version where the Ruby code could be compiled right into the shared library.
+The Graal.js result (7.2x as long the Java implementation) helps to establish that this is not a result specific to TruffleRuby.
 
-When calling Truffle languages, however, the performance numbers start flipping the other way.
-In the case where the Ruby code could be parsed and snapshotted into the image, there was essentially no performance difference at all between the Native Image C API and the JNI Invocation API.
-Once we started executing code using the GraalVM Polyglot API with values that were supplied at runtime, the JNI Invocation API handily outperformed the Native Image C API.
-The latter's approach to calling into the TruffleRuby interpreter via the GraalVM Polyglot API took 6x as long to execute as the JNI Invocation API.
+In an ideal world, there would be no steady state difference between using the GraalVM Polyglot API via JNI and hard-coding the guest language code fragment into the image.
+This is an area I'd like to dig into more.
+I would've expected the hard-coded version to have an advantage in execution speed before things have warmed up just by virtue of not needing to parse the code fragment.
+However, once warmed up, both approaches should have generated the same machine code since they're running the same code fragments with the same inputs.
+I don't know if the difference is due to JNI call overhead, issues with the JIT process, or something else.
 
-<!--
-If calling a function in a Native Image shared library incurs more overhead with JNI than the Native Image C API, that overhead is negated by the overall performance gain of working with a Truffle language via JNI.
-In the benchmarks where the Truffle language code to be executed is embedded directly in the compiled Java method, the JNI implementation as fast as or faster than the Native Image C API implementation.
-When calling into the Native Image library using the GraalVM Polyglot API, allowing for flexible execution of arbitrary guest language code, the JNI approach is an order of magnitude faster.
--->
+I started down the path of looking at how these different invocation techniques compiled into the Native Image binary, but found it rather difficult as the compiler generates label names divorced from the Java method names.
+Running a debug build helped map the labels back to their source methods, but it's still a time-consuming process of following `JMP` and `CALL` instructions in a debugger and consulting the backtrace to see where I logically was in the application.
+There's almost certainly a better way to dump the machine code for a method compiled by Native Image.
 
-If your goal is to embed Truffle languages into another process, using the JNI Invocation API is the clear winner.
-While the API is more difficult to work with, it is also considerably more flexible.
-That is ultimately why it outperforms the Native Image C API implementations using the GraalVM Polyglot API.
-In order to execute Truffle code within a Native Imaged shared library, the caller must construct a Graal Isolate and a Truffle context.
-Creating a Graal Isolate was covered elsewhere in this post and both the Native Image C API and JNI Invocation API have mechanisms for managing Graal Isolates.
-Working with the Truffle context is more complicated, however.
 
-Many of the examples using the GraalVM Polyglot API use a try-with-resources statement to create a Truffle context, which is then used for initializing a Truffle language engine and ultimately executing a fragment of code.
-While you can use this pattern in any `@CEntryPoint` function, you will lose any profiling information or compiled code when the context is closed.
-If you're executing long-running code, that may be fine.
-However, if you're looking to embed a Truffle language to execute small, short-lived snippets of code and call that `@CEntryPoint` method repeatedly (e.g., as part of a web request), performance will suffer greatly by not sharing the context across all invocations.
-Sharing the context so you can parse the code snippet once and execute that repeatedly is the way to go, but that resource management is rather complicated.
+##### Overall
 
-When you write a `@CEntryPoint` using try-with-resources for managing the Truffle context, you have a completely self-contained function you can call from C.
-When you want to share the context, you now need a mechanism for creating the context, passing it to all of your `@CEntryPoint` methods using the GraalVM Polyglot API, and a way to clean up the context when you're done with it.
-In contrast to managing Graal Isolates, the Native Image C API does not provide a way to manage Truffle contexts with special API methods.
-Instead, you would need a way to create the Truffle context in Java, return it in a call to `@CEntryPoint` method, then have the ability to pass it to other `@CEntryPoint` calls.
-This is where things get very complicated very quickly.
+The previous benchmark sections looked at the performance of different ways to execute code compiled into a Native Image shared library from an external process, with an emphasis on executing code in a Truffle interpreter.
+There are two primary invocation APIs for exposing Java methods and making them accessible via C calling conventions: the Native Image C API and the Java Native Interface (JNI) Invocation API.
+Thus far we've looked at the relative performance difference of executing methods written in C++, Java, Ruby, and JavaScript in each of these invocation APIs.
+In Fig. 7, we can now see how the invocation APIs perform relative to each other.
 
-The functions that Native Image can expose in a shared library only support a narrow range of types for parameters and return types.
+<div id="figure_7_report" class="figure" style="width: 100%"></div>
+<script>{
+  const report_data = {
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "description": "@CEntryPoint vs JNI",
+  "data": {
+    "values": [
+      {
+        "group": "Native Image C API",
+        "simple_name": "Java",
+        "variation": null,
+        "name": "@CEntryPoint: Java",
+        "value": 114.56076473060568,
+        "rounded_value": 114.6,
+        "time_unit": "ns",
+        "error": 1.556988203857994,
+        "rounded_error": 1.56
+      },
+      {
+        "group": "Native Image C API",
+        "simple_name": "Ruby",
+        "variation": null,
+        "name": "@CEntryPoint: Ruby",
+        "value": 117.17125988361313,
+        "rounded_value": 117.2,
+        "time_unit": "ns",
+        "error": 1.1523951658615907,
+        "rounded_error": 1.15
+      },
+      {
+        "group": "Native Image C API",
+        "simple_name": "Polyglot (JS)",
+        "variation": "Safe Parse Cache",
+        "name": "@CEntryPoint: Polyglot (JS) - Safe Parse Cache",
+        "value": 1613.384503270058,
+        "rounded_value": 1613.4,
+        "time_unit": "ns",
+        "error": 135.00741551454834,
+        "rounded_error": 135.01
+      },
+      {
+        "group": "Native Image C API",
+        "simple_name": "Polyglot (Ruby)",
+        "variation": "Safe Parse Cache",
+        "name": "@CEntryPoint: Polyglot (Ruby) - Safe Parse Cache",
+        "value": 1367.2829181917243,
+        "rounded_value": 1367.3,
+        "time_unit": "ns",
+        "error": 21.29638300062416,
+        "rounded_error": 21.3
+      },
+      {
+        "group": "JNI",
+        "simple_name": "Java",
+        "variation": null,
+        "name": "JNI: Java",
+        "value": 130.3617147079535,
+        "rounded_value": 130.4,
+        "time_unit": "ns",
+        "error": 0.3672427242629517,
+        "rounded_error": 0.37
+      },
+      {
+        "group": "JNI",
+        "simple_name": "Ruby",
+        "variation": null,
+        "name": "JNI: Ruby",
+        "value": 128.17134813563956,
+        "rounded_value": 128.2,
+        "time_unit": "ns",
+        "error": 0.7904849051992273,
+        "rounded_error": 0.79
+      },
+      {
+        "group": "JNI",
+        "simple_name": "Polyglot (Ruby)",
+        "variation": null,
+        "name": "JNI: Polyglot (Ruby)",
+        "value": 670.0573964137641,
+        "rounded_value": 670.1,
+        "time_unit": "ns",
+        "error": 33.62819017333239,
+        "rounded_error": 33.63
+      },
+      {
+        "group": "JNI",
+        "simple_name": "Polyglot (JS)",
+        "variation": null,
+        "name": "JNI: Polyglot (JS)",
+        "value": 943.8988927162053,
+        "rounded_value": 943.9,
+        "time_unit": "ns",
+        "error": 42.427902635590264,
+        "rounded_error": 42.43
+      }
+    ]
+  },
+  "encoding": {
+    "x": {
+      "field": "simple_name",
+      "type": "nominal",
+      "title": "Haversine Implementation",
+      "sort": null,
+      "axis": {
+        "labelAngle": -45,
+        "labelFontSize": 11,
+        "labelLimit": 300,
+        "titlePadding": 10,
+        "titleFontSize": 13
+      }
+    },
+    "xOffset": {
+      "field": "group"
+    },
+    "y": {
+      "field": "value",
+      "type": "quantitative",
+      "title": [
+        "Mean Execution Time (ns)",
+        "(Lower is Better)"
+      ],
+      "axis": {
+        "labelFontSize": 11,
+        "titlePadding": 10,
+        "titleFontSize": 13
+      }
+    },
+    "color": {
+      "field": "group"
+    }
+  },
+  "layer": [
+    {
+      "mark": {
+        "type": "bar",
+        "cornerRadiusTopLeft": 4,
+        "cornerRadiusTopRight": 4,
+        "tooltip": {
+          "expr": "datum.rounded_value + \" ± \" + datum.rounded_error + \" \" + datum.time_unit"
+        }
+      }
+    },
+    {
+      "mark": {
+        "type": "text",
+        "align": "center",
+        "dy": -5
+      },
+      "encoding": {
+        "text": {
+          "field": "rounded_value",
+          "type": "nominal",
+          "title": "Execution Time (ns)"
+        }
+      }
+    }
+  ],
+  "width": "container"
+};
+
+  vegaEmbed('#figure_7_report', report_data);
+}
+</script>
+
+<div class="caption"><caption>Figure 7: Benchmark results for Truffle polyglot methods invoked via both the Native Image C API and the JNI Invocation API.</caption></div>
+
+When calling a Java method compiled into binary without caller use of the GraalVM Polyglot API, the Native Image C API does come out ahead, although not by much.
+I want to qualify that statement by making it clear I was measuring warmed up benchmarks and did not get into wrapping object handles very much; the only data passed from the benchmark harness to the shared library were `double` values and C strings.
+The `double` values mapped directly to the Java primitive type, but the C strings needed to be decoded to `java.lang.String`.
+If there was more data coercion or coercion of more sophisticated types, I wouldn't be surprised to see differences in overhead between the two APIs.
+
+While it was interesting to see how each API handled calling plain old Java methods, my real goal was learning how embedded Truffle interpreters performed.
+When it comes to making calls using the GraalVM Polyglot API, the JNI Invocation API comes out way ahead.
+Polyglot calls made with JNI were roughly twice as fast as using the Native Image C API.
+This was a fortuitous outcome; the promoted invocation API is also the one that performs best for executing guest language code.
+
+I suspect a lot of the performance difference has to do with JNI providing a more natural and refined mechanism for managing Truffle objects.
+JNI can store and work with Java types right in C++.
+The Native Image C API only supports a narrow set of foreign objects and the supporting API is quite difficult to work with.
+Accordingly, the JNI benchmarks could parse guest language code and store the resulting Truffle function object right in a local field, which it could then use for each iteration of the benchmark.
+Whereas with the Native Image C API I needed to create a thread-safe map of guest code to Truffle functions (to avoid repeatedly parsing the same code fragment) and that cache needed to be consulted on each benchmark iteration.
+
+##### Lessons Learned: GraalVM Polyglot API
+
+I struggled quite a bit deciding where to put this section.
+It feels somewhat buried here at the end of the benchmark presentation, but I think the benchmark results help contextualize the notes on the GraalVM Polyglot API interactions.
+
+Simply put, I found the GraalVM Polyglot API incredibly awkward to work with from C and C++.
+There are issues working with it from both the Native Image C API and from the JNI Invocation API.
+There are risks with public APIs that are difficult to use.
+One is that the user simply gives up and moves on to another project or solution.
+For those that persevere, there's a risk that they're using the API in dangerous ways and just don't know it.
+Moreover, they can pass this incorrect knowledge off to others.
+Yet another risk is that the user will look for ways to simplify the API usage, without regard to its impact on performance.
+Conventional wisdom suggests this is the best path forward: make your application simple &amp; correct and then focus on performance.
+
+I started down the path of doing the simplest thing first.
+It wasn't just laziness or ineptitude though.
+The GraalVM [Embedding Languages](https://www.graalvm.org/22.1/reference-manual/embed-languages/) reference manual uses very simplified examples throughout the whole document.
+Notably, nearly every GraalVM Polyglot API example uses a _try-with-resources_ statement to create a polyglot context, which is then used to initialize a Truffle language engine and ultimately execute some guest language code.
+When the containing Java method exits, the context is freed.
+It's a very tidy way of doing resource management and it looks sensible.
+Having not thought too deeply about, this approach looked _right_ to me.
+
+I started this project working with the Native Image C API.
+When you write a `@CEntryPoint` method using _try-with-resources_ for managing the polyglot context, as in Example 7, you have a completely self-contained function you can call from C.
+Here, too, I thought everything looked nice and tidy.
+Java functions exposed with `@CEntryPoint` should be self-contained, which is forced by requiring the method to be `static`.
+You can access other `static` data, but that runs all the typical risks with using global values.
+
+```java
+@CEntryPoint(name = "distance_polyglot_no_cache")
+public static double distance(IsolateThread thread,
+                              CCharPointer cLanguage,
+                              CCharPointer cCode,
+                              double aLat, double aLong,
+                              double bLat, double bLong) {
+    try (Context context = Context.newBuilder()
+            .allowExperimentalOptions(true)
+            .option("ruby.no-home-provided", "true")
+            .build()) {
+        final String code = CTypeConversion.toJavaString(cCode);
+        final String language = CTypeConversion.toJavaString(cLanguage);
+
+        var function = context.eval(language, code);
+
+        return function.execute(aLat, aLong, bLat, bLong).asDouble();
+    }
+}
+```
+```c
+// Function declaration in header file generated by Native Image.
+double distance_polyglot_no_cache(graal_isolatethread_t*,
+                                  char*, char*, double, double, double, double);
+```
+<div class="caption"><caption>Example 7: Using try-with-resources for polyglot context management in a @CEntryPoint method.</caption></div>
+
+When I finally had everything come together such that a C application could execute Ruby code by calling a function written in Java and exposed in a Native Image shared library, I was ecstatic.
+The amount of technology that had to come together to make all of this happen is staggering and ten years ago I wouldn't have thought it was possible.
+However, my excitement was tempered by the abysmal execution time.
+Each time I ran this function, it took hundreds of milliseconds, sometimes even approaching a full second.
+
+The issue was every time I called this function, TruffleRuby needed to bootstrap from scratch.
+There's ongoing work to make that bootstrap process faster, particularly in native images.
+But, the proximate cause was the polyglot context never lasted more than a single function call.
+Even if TruffleRuby bootstrapped instantenously, my code would never have the ability to optimize in any meaningful way.
+Each time the context was closed, any JIT-generated code went along with it.
+
+At face value, the solution seemed simple enough: share the context across multiple calls.
+I could not find any documentation or code samples on how to do this with the Native Image C API.
+The `@CEntryPoint` functions that Native Image can expose in a shared library only support a narrow range of types for parameters and return types.
 You might think that you could pass arbitrary Java objects around as `void *`, treating them as opaque values to be passed around.
 However, Java is a garbage collected language and that presents problems.
 If the GC were to free an object you still have a pointer to, you would have a use-after-free problem if you ever used that pointer again.
 An equally bad situation is if the GC moves the object, since there would be no way to update the calling process.
-To help in this situation, you can _pin_ an object with the Native Image API, which will prevent the object from GC consideration.
+To prevent the GC from processing an object, you can _pin_ it with the Native Image C API.
 However, this should be done sparingly and is intended for ensuring an object doesn't in a very narrow window; long-term storage of an object's address is not recommended as it will have an impact on GC.
 Moreover, you won't find documentation on pinning objects.
 You will be decidedly in unsupported territory.
 
-Another way to share a Truffle context across multiple calls of `@CEntryPoint` is to store the context in a static field.
-Doing so, however, introduces thread safety issues.
-This is the approach I took for the benchmarks since I was unable to get object pinning to work correctly.
+There is a C-based GraalVM Polyglot API partially hidden inside GraalVM via the _libpolyglot_ image (`gu rebuild libpolyglot` to install it).
+With this API you can create a polyglot context from C, but you forfeit the nice, simple functions exposed via `@CEntryPoint`.
+For instance, looking back at the C function declaration from Example 7, we can call `distance_polyglot_no_cache` with a C string and C `double` values.
+The Java side of the call takes care of any necessary type coercion from C to Java types.
+Making a similar call with GraalVM Polyglot C API requires converting a C `double` to a `poly_value` using a function called [`poly_create_double`](https://github.com/oracle/graal/blob/da6a62d607552fc958ccb63f4ca1d81e1817cadc/substratevm/src/org.graalvm.polyglot.nativeapi/src/org/graalvm/polyglot/nativeapi/PolyglotNativeAPI.java#L801-L813=).
+Rather than pass individual `double` values as arguments for the Ruby Haversine code, the GraalVM Polyglot C API requires them to be packed into an array for a call to [`poly_value_execute`](https://github.com/oracle/graal/blob/da6a62d607552fc958ccb63f4ca1d81e1817cadc/substratevm/src/org.graalvm.polyglot.nativeapi/src/org/graalvm/polyglot/nativeapi/PolyglotNativeAPI.java#L587-L616=).
+
+To the best of my knowledge, there's no documentation for the GraalVM Polyglot C API.
+You have to piece it together by realizing it's a mirror of the Java-based GraalVM Polyglot API, which I did not know at first owing to the lack of documentation.
+From there, you have to match up data types and function declarations from the API's header files with the JavaDoc for the Java-based API.
+You can see my foray into [using this API](https://github.com/nirvdrum/native-image-playground/blob/ceff9b6e21c6a3d55d426c7c0c2a2cf3c8f7fcbb/src/main/c/native-polyglot/native-polyglot.c) in my Native Image Playground project.
+While I now appreciate the API symmetry and understand the design, I still the C API obtuse and error-prone.
+
+For me, at least, it was decidedly easier to try to find a way to share a polyglot context across multiple `@CEntryPoint` method calls.
+The ugly approach I landed on, and the one explored in the benchmarks for the Native Image C API, was to [build and store the context in a static field](https://github.com/nirvdrum/native-image-playground/blob/ceff9b6e21c6a3d55d426c7c0c2a2cf3c8f7fcbb/src/main/java/com/nirvdrum/truffleruby/NativeLibraryPolyglot.java#L15-L18=).
+For the hard-coded Ruby example, I evaluated the Haversine code snippet in a static initializer and [stored the polyglot function object in a static field](https://github.com/nirvdrum/native-image-playground/blob/ceff9b6e21c6a3d55d426c7c0c2a2cf3c8f7fcbb/src/main/java/com/nirvdrum/truffleruby/NativeLibraryRuby.java#L13=) so the code would not need to be re-parsed each time the `distance_ruby` function was called.
 For the polyglot cases, the caller supplies both the Truffle language identifier and the code to evaluate.
 Since parsing the code on each call would incur overhead, I set up a parsed code cache, keyed by the language ID and code.
-The code fragments for the Haversine distance were all implemented as anonymous functions, so the cache also ensures that we create an anonymous function once and call it repeatedly so that it can JIT.<a href="#footnote_6"><sup>6</sup></a>
+The benchmarks explore the performance impact of using such a cache and measures the overhead of ensuring its thread-safety.
+The cache serves another function: with the polyglot context being shared across each `@CEntryPoint` method call, evaluating a code fragment repeatedly will fail if the the fragment is not idempotent.
+Since I wanted to measure performance both with and without the cache, the code fragments for the Haversine distance were all implemented as anonymous functions.<a href="#footnote_6"><sup>6</sup></a>
 
+<!--
 The parse cache, while effective at helping the code fragment JIT, incurs overhead that adversely impacts the benchmark.
 To ensure thread-safety, I used a `ConcurrentHashMap` for the parse cache.
 I think this accurately reflects what a conscientious developer would need to do to support multiple calls with multiple code fragments.
 To further assess that impact, I replaced the `ConcurrentHashMap` with a single static field.
 For this benchmark, the cache does not support executing different code fragments and only uses a simple `null` check to determine whether to parse again &mdash; this almost certainly will result in multiple callers writing to the cache, but since the code fragment is idempotent, the wasted computation is acceptable and the cache will stabilize during benchmark warm-up.
 
+While you can use this pattern in any `@CEntryPoint` function, you will lose any profiling information or compiled code when the context is closed.
+If you're executing long-running code, that may be fine.
+However, if you're looking to embed a Truffle language to execute small, short-lived snippets of code and call that `@CEntryPoint` method repeatedly (e.g., as part of a web request), performance will suffer greatly by not sharing the context across all invocations.
+Sharing the context so you can parse the code snippet once and execute that repeatedly is the way to go, but that resource management is rather complicated.
+-->
+
+I don't doubt someone more intimately familiar with the Native Image C API and the GraalVM Polyglot API could find a more optimized way of calling guest code than I've used in this project.
+But, that circles back to the dearth of documentation and examples on how to embed Truffle interpreters in a performance-sensitive manner.
+
+In contrast, the JNI Invocation API makes polyglot resource management much easier.
+The design of the API allows storing and passing Java objects from C++ quite simple.
+The difficulty is that anyone using JNI to make GraalVM Polyglot API calls is going to need to map that API to a JNI configuration file to be used when building the Native Image binary.
+The Native Image Playground has [such a configuration file](https://github.com/nirvdrum/native-image-playground/blob/ceff9b6e21c6a3d55d426c7c0c2a2cf3c8f7fcbb/src/main/resources/native-jni-config.json), generated by the GraalVM tracing agent when the application was run using JNI against _libjvm_.
+The file can be hand-crafted, but Java has its own custom format for representing types and signatures and it's easy to get a mapping wrong over overlook one.
+If you get it wrong, you won't know until you run your application and it'll likely manifest as a segfault due to the mismapped function returning `NULL`.
+There may very well be an accompanying Java exception, but JNI does not print those by default; you must invoke yet another pair functions to check if an exception object exists and to print it out.
+Every call could fail, so a robust application would have extensive error-checking.
+But, that's tedious and really complicates the logic.
+For Native Image Playground I wrote an [exception-checking macro](https://github.com/nirvdrum/native-image-playground/blob/ceff9b6e21c6a3d55d426c7c0c2a2cf3c8f7fcbb/src/main/cxx/jni-runner/jni-runner.cxx#L10-L19=) that I sprinkled around the application when I encountered a segfault.
+Once you've identified what's missing or incorrect in your JNI configuration file, you need to go and rebuild the Native Image shared library.
+It's a slow and unforgiving process.
+
+When I started this project, I couldn't find much in way of documentation or examples for using the JNI Invocation API to call into a Native Image shared library.
+That changed with the release of GraalVM 22.1.0.
+Now the various Truffle languages are launched by a C++ application that uses JNI to run the interpreter either in a Graal-enabled JVM (via _libjvm_) or as a native application by calling into a Native Image shared library version of the interpreter.
+The launcher doesn't make use of the GraalVM Polyglot API, but it's still nice seeing how the JNI Invocation API should be used to call into a Native Image shared library.
+
 
 Conclusion
 ----------
 
-This turned out to be a much bigger project than I anticipated.
+This turned out to be a much bigger project than I anticipated and there's still much left to explore.
 Unfortunately, the various mechanisms for exposing Java methods in a Native Image shared library and then calling into those methods were not easy to discover.
-I found after the fact that some things that I thought were not documented actually were, but I didn't know which set of keywords to use or where in the GraalVM reference manual to find them.
+I found out after the fact that some things that I thought were undocumented turned out in fact to be documented, but I didn't know which set of keywords to use or where in the GraalVM reference manual to find them.
 Other things I needed to discover by digging into the Native Image source code.
-And to the best of my knowledge, no one has published comprehensive benchmarks on either the Native Image C API or the JNI Invocation API within a Native Image binary.
+I hope this blog post and the examples in the Native Image Playground project can help steer others in the right direction.
 
-Consequently, this blog post has turned out to be much larger than I anticipated.
-I wanted to document how to use both invocation APIs for calling into a Native Image shared library.
-Moreover, I wanted to show how to work effectively with Truffle languages embedded in other applications.
-And to top it all off, I wanted to show the performance trade-offs between both the invocation APIs and the various ways of calling into a Truffle interpreter.
+I don't have any data to back it up, but I get the sense that the predominant use case of Native Image is turning JVM-based applications into native applications.
+Using Native Image in this way is much easier than using it to build a shared library.
+And while there are plenty of benchmarks for Native Image applications, to the best of my knowledge no one has published comprehensive benchmarks on either the Native Image C API or the JNI Invocation API for calling functions within a Native Image shared library.
+I hope the experiments and results from this blog post can help developers make an informed decision about how best to expose and call Java methods in a Native Image shared library.
 
-The [Native Image Playground](https://github.com/nirvdrum/native-image-playground) is home to self-contained examples that demonstrate everything discussed in this post, including the benchmarks.
-Please see the "Native Image Overview" section for more details on how to work with the project.
+All of the benchmarks live in my [Native Image Playground](https://github.com/nirvdrum/native-image-playground) project.
+It's also home to self-contained examples that demonstrate everything discussed in this post.
+I intend for the playground to be a testbed for other experiments in embedding Truffle interpreters.
+Please see the [Native Image Overview](#native-image-overview) section for more details on how to work with the project.
 
 Based on my evaluation, I'll be using the JNI Invocation API for all of my Truffle embedded work.
 It's the API that the GraalVM team has signaled would be the future for foreign calls into a Native Image shared library and it's the fastest invocation API for calling into Truffle interpreters.
-Unfortunately, working with the GraalVM Polyglot API with JNI is very awkward.
-It requires building an extra configuration file to supply to the `native-image` compiler at image build time.
-That extra configuration file is a reflection of all the class and method mapping you'll need to do in order to make a Truffle call with JNI, which requires learning how to map Java types to their string-based type signatures.
-It's incredibly easy to make silent errors with JNI because Java exceptions don't bubble up.
-Instead, you need to make a call to check if an exception was raised and then decide what to do with it.
-As is typical in C error handling, you need not do this error-checking, but if you don't and there is an error, you'll probably just get a `nullptr` somewhere with very little help in finding the cause.
+Unfortunately, working with the GraalVM Polyglot API with JNI is a little difficult (please see the [Lessons Learned: GraalVM Polyglot API](#lessons-learned-graalvm-polyglot-api) section for more details).
 
-I think all of this could be addressed with a C-based wrapper API that takes care of the underlying JNI calls.
-Until then, please look at the _jni-native_ project in the Native Image Playground for an example how to call into a Truffle language via JNI and check out the "Java Native Interface (JNI) Invocation API" section for details on how to use the GraalVM Tracing Agent to help generate the JNI configuration file that the `native-image` binary requires.
+I think there's an opportunity here for the GraalVM project to remove some of the ceremony needed to call the GraalVM Polyglot API with the JNI Invocation API in a Native Image shared library.
+At the simplest level, it would be a huge quality of life improvement if Native Image could either automatically detect the presence of a Truffle interpreter or otherwise provide a flag to `native-image` that would handle registering the GraalVM Polyglot API types and methods for usage withou JNI.
+There's really no need to make each user go through the tedious and error-prone process of constructing the JNI configuration file themselves &mdash; the polyglot API is going to be the same for everyone.
+
+The next area I'd like to see improved is API ergonomics.
+My goal is to allow calling into a Truffle interpreter from a process loading my Native Image shared library.
+The Native Image C API's advantage here is that I get to largely determine what that API looks like and that API uses a C calling convention, making it very easy to call into the library from languages with foreign function libraries.
+Forcing every consumer of the shared library to learn how to use JNI is a large cognitive overhead.
+I also think it's a leaky abstraction.
+Most of the documentation I've found on using JNI is written using C++.
+I have successfully used JNI with Rust, but it was simply much harder than making foreign calls to other C-based shared libraries.
+In my ideal world the JNI calls are just an implementation detail and instead users work with a higher level API.
+I think this would be spiritually similar to the GraalVM Polyglot C API, but considerably simpler to work with.
 
 
 <hr />
