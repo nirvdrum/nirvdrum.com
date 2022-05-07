@@ -172,7 +172,7 @@ This alternative VM, called the [Substrate VM](https://www.graalvm.org/22.1/refe
 
 By using the JNI Invocation API, you don't need to learn a new Native Image-specific way to write code that drives a Java process.
 However, much of JNI is essentially runtime reflection and Native Image does not allow arbitrary reflection.
-In order to use JNI with a Native Image binary, you need to supply a [JNI configuration file](https://www.graalvm.org/22.1/reference-manual/native-image/JNI) to the `native-image` command when build your image.
+In order to use JNI with a Native Image binary, you need to supply a [JNI configuration file](https://www.graalvm.org/22.1/reference-manual/native-image/JNI/#reflection) to the `native-image` command when build your image.
 Manually creating that file is tedious and error-prone.
 To simplify the process, I recommend using a [tracing agent](https://www.graalvm.org/22.1/reference-manual/native-image/Agent/) provided by GraalVM, which will record all JNI calls made at runtime and dump them out to a file.
 To do so, you'll need to temporarily swap your application over to using _libjvm_, which will allow general JNI calls.
@@ -1250,25 +1250,24 @@ When it comes to making calls using the GraalVM Polyglot API, the JNI Invocation
 Polyglot calls made with JNI were roughly twice as fast as using the Native Image C API.
 This was a fortuitous outcome; the promoted invocation API is also the one that performs best for executing guest language code.
 
-I suspect a lot of the performance difference has to do with JNI providing a more natural and refined mechanism for managing Truffle objects.
+I suspect much of the performance difference is attributable to JNI providing a more natural and refined mechanism for managing Truffle objects.
 JNI can store and work with Java types right in C++.
 The Native Image C API only supports a narrow set of foreign objects and the supporting API is quite difficult to work with.
-Accordingly, the JNI benchmarks could parse guest language code and store the resulting Truffle function object right in a local field, which it could then use for each iteration of the benchmark.
-Whereas with the Native Image C API I needed to create a thread-safe map of guest code to Truffle functions (to avoid repeatedly parsing the same code fragment) and that cache needed to be consulted on each benchmark iteration.
+Accordingly, the JNI benchmarks can parse guest language code and store the resulting Truffle function object right in a local field, which it can then use for each iteration of the benchmark.
+Whereas with the Native Image C API, I needed to create a thread-safe map of guest code to Truffle functions (to avoid repeatedly parsing the same code fragment) and that cache needed to be read from on each benchmark iteration.
 
 ##### Lessons Learned: GraalVM Polyglot API
 
-I struggled quite a bit deciding where to put this section.
+I struggled a fair amount deciding where to put this section.
 It feels somewhat buried here at the end of the benchmark presentation, but I think the benchmark results help contextualize the notes on the GraalVM Polyglot API interactions.
 
 Simply put, I found the GraalVM Polyglot API incredibly awkward to work with from C and C++.
 There are issues working with it from both the Native Image C API and from the JNI Invocation API.
 There are risks with public APIs that are difficult to use.
-One is that the user simply gives up and moves on to another project or solution.
+One is that users simply give up and moves on to another project or solution.
 For those that persevere, there's a risk that they're using the API in dangerous ways and just don't know it.
-Moreover, they can pass this incorrect knowledge off to others.
-Yet another risk is that the user will look for ways to simplify the API usage, without regard to its impact on performance.
-Conventional wisdom suggests this is the best path forward: make your application simple &amp; correct and then focus on performance.
+Moreover, they can pass this incorrect knowledge off to others, exacerbating the problem.
+Yet another risk is that users will look for ways to simplify the API usage and kill performance in the process.
 
 I started down the path of doing the simplest thing first.
 It wasn't just laziness or ineptitude though.
@@ -1281,8 +1280,7 @@ Having not thought too deeply about, this approach looked _right_ to me.
 I started this project working with the Native Image C API.
 When you write a `@CEntryPoint` method using _try-with-resources_ for managing the polyglot context, as in Example 7, you have a completely self-contained function you can call from C.
 Here, too, I thought everything looked nice and tidy.
-Java functions exposed with `@CEntryPoint` should be self-contained, which is forced by requiring the method to be `static`.
-You can access other `static` data, but that runs all the typical risks with using global values.
+Java functions exposed with `@CEntryPoint` are supposed to be self-contained; they must be _static_ and they only have access to their parameters and other _static_ data.
 
 ```java
 @CEntryPoint(name = "distance_polyglot_no_cache")
@@ -1311,77 +1309,66 @@ double distance_polyglot_no_cache(graal_isolatethread_t*,
 ```
 <div class="caption"><caption>Example 7: Using try-with-resources for polyglot context management in a @CEntryPoint method.</caption></div>
 
-When I finally had everything come together such that a C application could execute Ruby code by calling a function written in Java and exposed in a Native Image shared library, I was ecstatic.
+When I finally had everything come together such that a C application could successfully execute Ruby code by calling a function written in Java that was exposed in a Native Image shared library, I was ecstatic.
 The amount of technology that had to come together to make all of this happen is staggering and ten years ago I wouldn't have thought it was possible.
 However, my excitement was tempered by the abysmal execution time.
-Each time I ran this function, it took hundreds of milliseconds, sometimes even approaching a full second.
+Each time I ran this function, it took hundreds of milliseconds &mdash; sometimes even approaching a full second.
 
-The issue was every time I called this function, TruffleRuby needed to bootstrap from scratch.
+The probablem was every time I called this function, TruffleRuby needed to bootstrap from scratch.
 There's ongoing work to make that bootstrap process faster, particularly in native images.
 But, the proximate cause was the polyglot context never lasted more than a single function call.
 Even if TruffleRuby bootstrapped instantenously, my code would never have the ability to optimize in any meaningful way.
 Each time the context was closed, any JIT-generated code went along with it.
 
 At face value, the solution seemed simple enough: share the context across multiple calls.
-I could not find any documentation or code samples on how to do this with the Native Image C API.
+However, I could not find any documentation or code samples on how to do this with the Native Image C API.
 The `@CEntryPoint` functions that Native Image can expose in a shared library only support a narrow range of types for parameters and return types.
 You might think that you could pass arbitrary Java objects around as `void *`, treating them as opaque values to be passed around.
 However, Java is a garbage collected language and that presents problems.
 If the GC were to free an object you still have a pointer to, you would have a use-after-free problem if you ever used that pointer again.
 An equally bad situation is if the GC moves the object, since there would be no way to update the calling process.
 To prevent the GC from processing an object, you can _pin_ it with the Native Image C API.
-However, this should be done sparingly and is intended for ensuring an object doesn't in a very narrow window; long-term storage of an object's address is not recommended as it will have an impact on GC.
-Moreover, you won't find documentation on pinning objects.
-You will be decidedly in unsupported territory.
+However, this should be done sparingly and is intended to prevent an object from moving during a very narrow window; long-term pinning of an object is not recommended as it will have an adverse impact on GC.
+Moreover, you won't find documentation on pinning objects with the Native Image C API; you will be in decidedly unsupported territory.
 
 There is a C-based GraalVM Polyglot API partially hidden inside GraalVM via the _libpolyglot_ image (`gu rebuild libpolyglot` to install it).
-With this API you can create a polyglot context from C, but you forfeit the nice, simple functions exposed via `@CEntryPoint`.
+With this API you _can_ create a polyglot context from C, but you forfeit the nice, simple functions exposed via `@CEntryPoint`.
 For instance, looking back at the C function declaration from Example 7, we can call `distance_polyglot_no_cache` with a C string and C `double` values.
-The Java side of the call takes care of any necessary type coercion from C to Java types.
-Making a similar call with GraalVM Polyglot C API requires converting a C `double` to a `poly_value` using a function called [`poly_create_double`](https://github.com/oracle/graal/blob/da6a62d607552fc958ccb63f4ca1d81e1817cadc/substratevm/src/org.graalvm.polyglot.nativeapi/src/org/graalvm/polyglot/nativeapi/PolyglotNativeAPI.java#L801-L813=).
-Rather than pass individual `double` values as arguments for the Ruby Haversine code, the GraalVM Polyglot C API requires them to be packed into an array for a call to [`poly_value_execute`](https://github.com/oracle/graal/blob/da6a62d607552fc958ccb63f4ca1d81e1817cadc/substratevm/src/org.graalvm.polyglot.nativeapi/src/org/graalvm/polyglot/nativeapi/PolyglotNativeAPI.java#L587-L616=).
+The Java side of the call takes care of any necessary type coercion from C to Java types and dispatches the appropriate arguments to the polyglot function call.
+The GraalVM Polyglot C API, on the other hand, requires using its own API-specific types.
+Making a similar call with this API involves converting a C `double` to a type called `poly_value` (using [`poly_create_double`](https://github.com/oracle/graal/blob/da6a62d607552fc958ccb63f4ca1d81e1817cadc/substratevm/src/org.graalvm.polyglot.nativeapi/src/org/graalvm/polyglot/nativeapi/PolyglotNativeAPI.java#L801-L813=)) and then packing all four values into an array for a call to the polyglot function via [`poly_value_execute`](https://github.com/oracle/graal/blob/da6a62d607552fc958ccb63f4ca1d81e1817cadc/substratevm/src/org.graalvm.polyglot.nativeapi/src/org/graalvm/polyglot/nativeapi/PolyglotNativeAPI.java#L587-L616=).
 
 To the best of my knowledge, there's no documentation for the GraalVM Polyglot C API.
 You have to piece it together by realizing it's a mirror of the Java-based GraalVM Polyglot API, which I did not know at first owing to the lack of documentation.
 From there, you have to match up data types and function declarations from the API's header files with the JavaDoc for the Java-based API.
 You can see my foray into [using this API](https://github.com/nirvdrum/native-image-playground/blob/ceff9b6e21c6a3d55d426c7c0c2a2cf3c8f7fcbb/src/main/c/native-polyglot/native-polyglot.c) in my Native Image Playground project.
-While I now appreciate the API symmetry and understand the design, I still the C API obtuse and error-prone.
+While I now appreciate the API symmetry and understand the design, I still find the GraalVM Polyglot C API a bit obtuse to use and rather error-prone.
 
 For me, at least, it was decidedly easier to try to find a way to share a polyglot context across multiple `@CEntryPoint` method calls.
 The ugly approach I landed on, and the one explored in the benchmarks for the Native Image C API, was to [build and store the context in a static field](https://github.com/nirvdrum/native-image-playground/blob/ceff9b6e21c6a3d55d426c7c0c2a2cf3c8f7fcbb/src/main/java/com/nirvdrum/truffleruby/NativeLibraryPolyglot.java#L15-L18=).
 For the hard-coded Ruby example, I evaluated the Haversine code snippet in a static initializer and [stored the polyglot function object in a static field](https://github.com/nirvdrum/native-image-playground/blob/ceff9b6e21c6a3d55d426c7c0c2a2cf3c8f7fcbb/src/main/java/com/nirvdrum/truffleruby/NativeLibraryRuby.java#L13=) so the code would not need to be re-parsed each time the `distance_ruby` function was called.
 For the polyglot cases, the caller supplies both the Truffle language identifier and the code to evaluate.
 Since parsing the code on each call would incur overhead, I set up a parsed code cache, keyed by the language ID and code.
-The benchmarks explore the performance impact of using such a cache and measures the overhead of ensuring its thread-safety.
 The cache serves another function: with the polyglot context being shared across each `@CEntryPoint` method call, evaluating a code fragment repeatedly will fail if the the fragment is not idempotent.
-Since I wanted to measure performance both with and without the cache, the code fragments for the Haversine distance were all implemented as anonymous functions.<a href="#footnote_6"><sup>6</sup></a>
-
-<!--
-The parse cache, while effective at helping the code fragment JIT, incurs overhead that adversely impacts the benchmark.
-To ensure thread-safety, I used a `ConcurrentHashMap` for the parse cache.
-I think this accurately reflects what a conscientious developer would need to do to support multiple calls with multiple code fragments.
-To further assess that impact, I replaced the `ConcurrentHashMap` with a single static field.
-For this benchmark, the cache does not support executing different code fragments and only uses a simple `null` check to determine whether to parse again &mdash; this almost certainly will result in multiple callers writing to the cache, but since the code fragment is idempotent, the wasted computation is acceptable and the cache will stabilize during benchmark warm-up.
-
-While you can use this pattern in any `@CEntryPoint` function, you will lose any profiling information or compiled code when the context is closed.
-If you're executing long-running code, that may be fine.
-However, if you're looking to embed a Truffle language to execute small, short-lived snippets of code and call that `@CEntryPoint` method repeatedly (e.g., as part of a web request), performance will suffer greatly by not sharing the context across all invocations.
-Sharing the context so you can parse the code snippet once and execute that repeatedly is the way to go, but that resource management is rather complicated.
--->
+The benchmarks explore the performance impact of using such a cache and measures the overhead of ensuring its thread-safety.
+To avoid issues re-parsing the same code fragment multiple times when the cache is disabled, the fragments for the Haversine distance were all implemented as anonymous functions.<a href="#footnote_6"><sup>6</sup></a>
 
 I don't doubt someone more intimately familiar with the Native Image C API and the GraalVM Polyglot API could find a more optimized way of calling guest code than I've used in this project.
 But, that circles back to the dearth of documentation and examples on how to embed Truffle interpreters in a performance-sensitive manner.
+If there's a better way to share compiled code across multiple `@CEntryPoint` method calls, I haven't found it.
 
 In contrast, the JNI Invocation API makes polyglot resource management much easier.
-The design of the API allows storing and passing Java objects from C++ quite simple.
-The difficulty is that anyone using JNI to make GraalVM Polyglot API calls is going to need to map that API to a JNI configuration file to be used when building the Native Image binary.
+The design of the API allows storing and passing Java objects to and from C++.
+The difficulty is that anyone using JNI to make GraalVM Polyglot API calls is going to need to map that API to a [JNI configuration file](https://www.graalvm.org/22.1/reference-manual/native-image/JNI/#reflection) to be used when building the Native Image binary.
 The Native Image Playground has [such a configuration file](https://github.com/nirvdrum/native-image-playground/blob/ceff9b6e21c6a3d55d426c7c0c2a2cf3c8f7fcbb/src/main/resources/native-jni-config.json), generated by the GraalVM tracing agent when the application was run using JNI against _libjvm_.
+
 The file can be hand-crafted, but Java has its own custom format for representing types and signatures and it's easy to get a mapping wrong over overlook one.
-If you get it wrong, you won't know until you run your application and it'll likely manifest as a segfault due to the mismapped function returning `NULL`.
-There may very well be an accompanying Java exception, but JNI does not print those by default; you must invoke yet another pair functions to check if an exception object exists and to print it out.
+If you get it wrong, you won't know until you run your application and it'll likely manifest as a segfault due to the mismapped function returning `nullptr`.
+There may very well be an accompanying Java exception, but JNI does not print those by default; you must invoke yet another pair of functions to check if an exception object exists and then to print it out if so.
 Every call could fail, so a robust application would have extensive error-checking.
-But, that's tedious and really complicates the logic.
-For Native Image Playground I wrote an [exception-checking macro](https://github.com/nirvdrum/native-image-playground/blob/ceff9b6e21c6a3d55d426c7c0c2a2cf3c8f7fcbb/src/main/cxx/jni-runner/jni-runner.cxx#L10-L19=) that I sprinkled around the application when I encountered a segfault.
+But, that's tedious and makes the business logic much harder to read.
+For Native Image Playground I wrote an [exception-checking macro](https://github.com/nirvdrum/native-image-playground/blob/ceff9b6e21c6a3d55d426c7c0c2a2cf3c8f7fcbb/src/main/cxx/jni-runner/jni-runner.cxx#L10-L19=) that I sprinkled around the application when I encountered a segfault and then removed after the bug was fixed.
+
 Once you've identified what's missing or incorrect in your JNI configuration file, you need to go and rebuild the Native Image shared library.
 It's a slow and unforgiving process.
 
@@ -1394,11 +1381,12 @@ The launcher doesn't make use of the GraalVM Polyglot API, but it's still nice s
 Conclusion
 ----------
 
-This turned out to be a much bigger project than I anticipated and there's still much left to explore.
+This turned out to be a much larger project than I had anticipated and there's still much left to explore.
 Unfortunately, the various mechanisms for exposing Java methods in a Native Image shared library and then calling into those methods were not easy to discover.
-I found out after the fact that some things that I thought were undocumented turned out in fact to be documented, but I didn't know which set of keywords to use or where in the GraalVM reference manual to find them.
-Other things I needed to discover by digging into the Native Image source code.
-I hope this blog post and the examples in the Native Image Playground project can help steer others in the right direction.
+I frequently had to dig into the Native Image source code to work things out.
+To be fair, some stuff I thought was undocumented turned out in fact to be documented; I simply didn't know which set of keywords to use to find them.
+Maybe there's even more documentation out there that I've yet to discover.
+Be that as it may, I hope this blog post and the examples in the Native Image Playground project can help steer others in the right direction and save them some frustration.
 
 I don't have any data to back it up, but I get the sense that the predominant use case of Native Image is turning JVM-based applications into native applications.
 Using Native Image in this way is much easier than using it to build a shared library.
@@ -1415,16 +1403,16 @@ It's the API that the GraalVM team has signaled would be the future for foreign 
 Unfortunately, working with the GraalVM Polyglot API with JNI is a little difficult (please see the [Lessons Learned: GraalVM Polyglot API](#lessons-learned-graalvm-polyglot-api) section for more details).
 
 I think there's an opportunity here for the GraalVM project to remove some of the ceremony needed to call the GraalVM Polyglot API with the JNI Invocation API in a Native Image shared library.
-At the simplest level, it would be a huge quality of life improvement if Native Image could either automatically detect the presence of a Truffle interpreter or otherwise provide a flag to `native-image` that would handle registering the GraalVM Polyglot API types and methods for usage withou JNI.
+At the simplest level, it would be a huge quality of life improvement if Native Image could handle registering the GraalVM Polyglot API for JNI usage without user involvement.
 There's really no need to make each user go through the tedious and error-prone process of constructing the JNI configuration file themselves &mdash; the polyglot API is going to be the same for everyone.
 
 The next area I'd like to see improved is API ergonomics.
-My goal is to allow calling into a Truffle interpreter from a process loading my Native Image shared library.
+My goal was to execute guest language code in a Truffle interpreter from a process loading my Native Image shared library.
 The Native Image C API's advantage here is that I get to largely determine what that API looks like and that API uses a C calling convention, making it very easy to call into the library from languages with foreign function libraries.
 Forcing every consumer of the shared library to learn how to use JNI is a large cognitive overhead.
 I also think it's a leaky abstraction.
-Most of the documentation I've found on using JNI is written using C++.
-I have successfully used JNI with Rust, but it was simply much harder than making foreign calls to other C-based shared libraries.
+Having to map all of JNI for use with a foreign function library is a massive undertaking.
+Without doing so, however, there's no real way call my Native Image shared library in any language other than C or C++.
 In my ideal world the JNI calls are just an implementation detail and instead users work with a higher level API.
 I think this would be spiritually similar to the GraalVM Polyglot C API, but considerably simpler to work with.
 
