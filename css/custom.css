@@ -43,3 +43,11 @@ ol, ul {
 h4 {
   margin-top: 30px;
 }
+
+ol ol {
+  list-style: lower-alpha;
+}
+
+ol a, ul a {
+  text-decoration: underline !important;
+}
