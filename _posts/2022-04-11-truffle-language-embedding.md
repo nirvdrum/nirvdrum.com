@@ -7,7 +7,7 @@ date: 2022-05-09 11:16 -0400
 Introduction
 ------------
 
-The past several years of my career have been spent predominately working on [TruffleRuby](https://www.graalvm.org/ruby/), an implemention of the Ruby programming language that can achieve [impressive execution speed](https://eregon.me/blog/2022/01/06/benchmarking-cruby-mjit-yjit-jruby-truffleruby.html) thanks to the [Truffle](https://www.graalvm.org/22.1/graalvm-as-a-platform/language-implementation-framework/) language implementation framework and the [Graal](https://github.com/oracle/graal/tree/master/compiler) JIT compiler.
+The past several years of my career have been spent predominately working on [TruffleRuby](https://www.graalvm.org/ruby/), an implementation of the Ruby programming language that can achieve [impressive execution speed](https://eregon.me/blog/2022/01/06/benchmarking-cruby-mjit-yjit-jruby-truffleruby.html) thanks to the [Truffle](https://www.graalvm.org/22.1/graalvm-as-a-platform/language-implementation-framework/) language implementation framework and the [Graal](https://github.com/oracle/graal/tree/master/compiler) JIT compiler.
 Taken together, these three technologies form part of the GraalVM distribution.
 The full distribution includes implementations of other languages (JavaScript, Python, R, and Java), an interpreter for LLVM bitcode (Sulong), tooling such as a profiler and debugger for both host and guest code (VisualVM), tooling to visualize decisions made by the JIT compiler (IGV), and the ability to generate native binaries of Java applications (including any of the listed language interpreters) via Native Image.
 There's more to GraalVM as well, which makes defining it and discovering all of its capabilities difficult.
